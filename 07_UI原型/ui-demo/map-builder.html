@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 建造地图</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    /* ---- 左：建造菜单 ---- */
+    .build { top: 92px; left: 20px; width: 282px; bottom: 92px; display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; }
+    .cat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+    .cat { padding: 9px 4px; text-align: center; background: rgba(19,25,28,0.92); color: var(--muted); font-size: 12px; font-weight: 800; cursor: pointer; border: 0; }
+    .cat[aria-pressed="true"] { background: rgba(213,155,66,0.18); color: #ffe0a5; box-shadow: inset 0 -2px 0 var(--amber); }
+    .blist { overflow: auto; padding: 8px; }
+    .bcard { display: grid; grid-template-columns: 34px 1fr; gap: 11px; align-items: center; padding: 10px; border: 1px solid transparent; cursor: pointer; width: 100%; text-align: left; background: transparent; }
+    .bcard:hover { background: rgba(244,239,225,0.04); }
+    .bcard[aria-pressed="true"] { border-color: var(--amber); background: rgba(213,155,66,0.12); }
+    .bicon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 17px; background: rgba(244,239,225,0.06); }
+    .bname { font-size: 13.5px; font-weight: 800; }
+    .breq { font-size: 11px; color: var(--faint); margin-top: 3px; }
+    .reqbox { padding: 13px 16px; border-top: 1px solid var(--line); background: rgba(6,10,11,0.42); }
+    .reqline { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 6px 0; color: var(--muted); }
+
+    /* ---- 中：地图 ---- */
+    .mapwrap {
+      position: absolute; top: 92px; left: 318px; right: 360px; bottom: 92px;
+      border: 1px solid var(--line); z-index: 4; overflow: auto;
+      background: radial-gradient(130% 110% at 50% 0%, rgba(30,40,38,0.5), rgba(6,11,12,0.96));
+      box-shadow: 0 16px 36px var(--shadow); display: grid; place-items: center;
+    }
+    .grid { position: relative; }
+    .tile {
+      position: absolute; width: 36px; height: 36px;
+      border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; cursor: pointer;
+      display: grid; place-items: center; font-size: 16px; transition: box-shadow .08s; padding: 0;
+    }
+    .tile.plain  { background: #2a3026; }
+    .tile.water  { background: linear-gradient(135deg, #1d4254, #2a5d72); }
+    .tile.forest { background: #28381f; }
+    .tile.ore    { background: #3a2f1c; }
+    .tile.rock   { background: #34322c; }
+    .tile.road::after { content:""; position:absolute; inset:7px; background: rgba(213,155,66,0.42); }
+    .tile .bld { z-index: 2; filter: drop-shadow(0 1px 1px #000); }
+    .tile:hover { box-shadow: inset 0 0 0 2px var(--steel); z-index: 3; }
+    .tile.sel { box-shadow: inset 0 0 0 2px var(--ink); z-index: 3; }
+    /* 叠加层（由 body class 控制） */
+    .show-power .tile.powered::before { content:""; position:absolute; inset:0; background: rgba(90,183,200,0.22); }
+    .show-water .tile.water { box-shadow: inset 0 0 0 2px rgba(90,183,200,0.7); }
+    .show-water .tile .wd { display:grid; }
+    .tile .wd { display:none; position:absolute; right:2px; bottom:1px; font-size:9px; color:#bfe6f0; z-index:2; }
+    .show-roads .tile.road::after { background: rgba(213,155,66,0.85); }
+    /* 适建热力（放置模式） */
+    .placing .tile.fit-ok::before  { content:""; position:absolute; inset:0; background: rgba(123,179,108,0.32); }
+    .placing .tile.fit-bad::before { content:""; position:absolute; inset:0; background: rgba(199,90,71,0.28); }
+    .ghost { position:absolute; border:2px dashed var(--amber); z-index:4; pointer-events:none; display:none; }
+
+    .map-hud { position:absolute; left:12px; top:10px; z-index:5; background: rgba(8,12,13,0.82); border:1px solid var(--line); padding:7px 11px; font-size:12px; }
+    .map-hud b { color: var(--amber); }
+    .legend2 { position:absolute; right:12px; bottom:10px; z-index:5; background: rgba(8,12,13,0.82); border:1px solid var(--line); padding:8px 11px; font-size:11px; display:grid; gap:5px; }
+    .legend2 span { display:flex; align-items:center; gap:7px; color: var(--muted); }
+    .legend2 i { width:12px; height:12px; flex:none; }
+
+    /* ---- 右：地块 / 校验 ---- */
+    .inspect { top: 92px; right: 20px; width: 324px; bottom: 92px; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+    .ins-body { overflow: auto; padding: 16px 18px; }
+    .coord { font-size: 12px; color: var(--faint); }
+    .check { display: grid; grid-template-columns: 22px 1fr auto; gap: 9px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+    .ck-ic { width: 20px; height: 20px; display: grid; place-items: center; font-weight: 900; border: 1px solid var(--line); }
+    .ck-ic.ok { color: var(--green); border-color: rgba(123,179,108,0.5); }
+    .ck-ic.no { color: var(--red); border-color: rgba(199,90,71,0.5); }
+    .ck-val { color: var(--muted); font-size: 12px; }
+    .verdict { margin: 14px 0; padding: 12px 14px; font-weight: 900; font-size: 15px; text-align: center; border: 1px solid; }
+    .verdict.ok  { color: #b9e2a8; border-color: rgba(123,179,108,0.6); background: rgba(123,179,108,0.14); }
+    .verdict.no  { color: #ffb6a4; border-color: rgba(199,90,71,0.6); background: rgba(199,90,71,0.16); }
+    .verdict.idle{ color: var(--muted); border-color: var(--line); background: rgba(255,255,255,0.03); font-weight:700; font-size:13px;}
+    .survey-grid {
+      background:
+        radial-gradient(80% 60% at 50% 22%, rgba(216,207,185,0.06), transparent 64%),
+        linear-gradient(180deg, rgba(31,39,36,0.92), rgba(8,10,10,0.98));
+    }
+    .frost-field .tile {
+      border-color: rgba(216,207,185,0.075);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+    }
+    .frost-field .tile.plain { background: #2e332b; }
+    .frost-field .tile.water { background: linear-gradient(135deg, #253f47, #4d6870); }
+    .frost-field .tile.forest { background: #293121; }
+    .frost-field .tile.ore { background: #433923; }
+    .frost-field .tile.rock { background: #353631; }
+    .site-stake {
+      border-color: var(--brass);
+      background: rgba(201,154,77,0.08);
+    }
+    .construction-ledger {
+      background: rgba(11,14,13,0.5);
+    }
+    .tile .bld,
+    .bicon {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--paper);
+    }
+  </style>
+</head>
+<body class="show-power">
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">建造地图 · 铁山工业区西段</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="map-builder.html" class="active">建造地图</a>
+        <a href="tech-tree.html">科技树</a>
+        <a href="strategic-map.html">战略态势</a>
+        <a href="senate-roster.html">元老名册</a>
+        <a href="diplomacy.html">外交博弈</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>蒸汽功率 2,420 hp</span><span class="pill">橙色警戒</span><span>-12℃</span></div>
+      </div>
+    </header>
+
+    <!-- 左：建造菜单 -->
+    <aside class="panel build">
+      <div class="panel-head" style="padding:13px 16px"><div class="eyebrow">建造菜单</div><div class="panel-title" style="font-size:18px;margin-top:6px">选择要建造的设施</div></div>
+      <div class="cat-strip" id="catStrip"></div>
+      <div class="blist" id="blist"></div>
+      <div class="reqbox construction-ledger">
+        <div class="section-title" style="margin-bottom:6px"><span id="reqName">机器制造厂</span><span class="badge mid" id="reqCost">320 两</span></div>
+        <div id="reqList"></div>
+      </div>
+    </aside>
+
+    <!-- 中：地图 -->
+    <section class="mapwrap survey-grid frost-field game-map-surface" id="mapwrap">
+      <div class="map-hud">视野：<b>高空俯视</b> · 铁山西段<br><span id="modeHud">选择建筑后点击地块放置</span></div>
+      <div class="grid" id="grid"><div class="ghost site-stake" id="ghost"></div></div>
+      <div class="legend2">
+        <span><i style="background:#2a3026"></i>空地</span>
+        <span><i style="background:#2a5d72"></i>水域（水源）</span>
+        <span><i style="background:#28381f"></i>林地</span>
+        <span><i style="background:#3a2f1c"></i>矿点</span>
+        <span><i style="background:rgba(90,183,200,0.4)"></i>能源覆盖</span>
+        <span><i style="background:rgba(213,155,66,0.6)"></i>道路</span>
+      </div>
+    </section>
+
+    <!-- 右：地块校验 -->
+    <aside class="panel inspect">
+      <div class="panel-head">
+        <div class="eyebrow" id="insEyebrow">地块勘测</div>
+        <div class="panel-title" id="insTitle" style="font-size:22px">未选择地块</div>
+        <div class="panel-meta coord" id="insCoord">在地图上悬停或点击一个地块</div>
+      </div>
+      <div class="ins-body">
+        <div class="verdict idle" id="verdict">先在左侧选择建筑，再在地图上挑选地块</div>
+        <div id="checks"></div>
+      </div>
+      <div style="padding:14px 18px;border-top:1px solid var(--line);background:rgba(6,10,11,0.32);display:grid;grid-template-columns:1fr auto;gap:10px">
+        <button class="cmd primary" id="confirmBtn" disabled>确认建造</button>
+        <button class="cmd" id="cancelBtn">取消</button>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <span class="hint" style="margin-right:14px">叠加层</span>
+        <button class="cmd" data-ov="show-roads">道路</button>
+        <button class="cmd" data-ov="show-water">水源</button>
+        <button class="cmd primary" data-ov="show-power">能源</button>
+        <div class="hint" style="margin-left:18px">灰色 = 条件未满足。工业设施需邻接道路、覆盖蒸汽动力、靠近水源。</div>
+      </div>
+      <div class="bottom-group right">
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // ====== 场景数据（铁山工业区西段示例） ======
+    // 地形：. 空地 | w 水域 | f 林地 | o 矿点 | r 山岩（每行 15 列）
+    const TERRAIN = [
+      "ff...ww........",
+      "ff....ww...oo..",
+      ".....r.ww..oo..",
+      "..f..r..ww....r",
+      "..f.....ww...rr",
+      ".........ww....",
+      "..........ww...",
+      "oo.........ww..",
+      "oo..ff......ww.",
+      "....ff.......ww",
+      ".....f........w",
+    ];
+    const ROWS = TERRAIN.length, COLS = TERRAIN[0].length, T = 36;
+    // 道路
+    const ROADS = new Set([
+      "1,3","2,3","3,3","4,3","5,3","6,3","7,3","8,3","9,3",
+      "5,4","5,5","5,6","5,7","5,8",
+      "4,4","3,4",
+    ]);
+    // 既有建筑：power=true 提供蒸汽动力（覆盖半径 3）
+    const BUILDINGS = [
+      { r:3, c:4, g:"炉", label:"铁山高炉", power:false },
+      { r:5, c:5, g:"汽", label:"蒸汽机房", power:true },
+      { r:8, c:3, g:"居", label:"居民区", power:false },
+      { r:2, c:12, g:"堡", label:"东外圈棱堡", power:false },
+    ];
+    const POWER_R = 3;
+
+    // ====== 建筑类型与建造条件 ======
+    const CATS = ["工业","民生","农业","基础"];
+    const MENU = {
+      "工业": [
+        { id:"machine", g:"机", nm:"机器制造厂", cost:"320 两", road:true, water:3, power:true, terr:["plain"], desc:"标准零件与机床母机" },
+        { id:"furnace", g:"炉", nm:"炼铁高炉",   cost:"480 两", road:true, water:4, power:true, terr:["plain","ore"], desc:"焦炭炼铁，邻矿更优" },
+        { id:"chem",    g:"化", nm:"化工厂",     cost:"360 两", road:true, water:2, power:true, terr:["plain"], desc:"酸碱、火药、磺胺" },
+      ],
+      "民生": [
+        { id:"house", g:"居", nm:"归化民居民区", cost:"180 两", road:true, water:4, power:false, terr:["plain"], desc:"家庭化安置单元" },
+        { id:"clinic",g:"医", nm:"卫生所",       cost:"220 两", road:true, water:3, power:false, terr:["plain"], desc:"降低疫情与战伤减员" },
+        { id:"hall",  g:"食", nm:"公共食堂",     cost:"150 两", road:true, water:3, power:false, terr:["plain"], desc:"辽南健康饮食标准" },
+      ],
+      "农业": [
+        { id:"farm",  g:"田", nm:"大田农田",     cost:"60 两",  road:false, water:2, power:false, terr:["plain"], desc:"耐寒早熟品种" },
+        { id:"green", g:"苗", nm:"温室育苗",     cost:"140 两", road:true,  water:2, power:false, terr:["plain"], desc:"脱毒种薯，冬季产出" },
+        { id:"fish",  g:"渔", nm:"渔获码头",     cost:"160 两", road:true,  water:1, power:false, terr:["plain"], desc:"须紧邻水域" },
+      ],
+      "基础": [
+        { id:"road",  g:"▤", nm:"道路 / 窄轨",  cost:"20 两",  road:false, water:null, power:false, terr:["plain","forest","ore","rock"], desc:"连通补给网络" },
+        { id:"steam", g:"汽", nm:"蒸汽机房",     cost:"400 两", road:true,  water:2, power:false, terr:["plain"], desc:"为周边提供蒸汽动力", gives:true },
+        { id:"pipe",  g:"≈", nm:"引水暗渠",     cost:"90 两",  road:false, water:1, power:false, terr:["plain"], desc:"自水域引水扩大覆盖" },
+        { id:"tele",  g:"↯", nm:"电报站",       cost:"120 两", road:true,  water:null, power:false, terr:["plain"], desc:"指挥与情报中继" },
+      ],
+    };
+
+    // ====== 计算辅助 ======
+    const key = (r,c)=>`${r},${c}`;
+    function terrAt(r,c){ const ch = TERRAIN[r][c]; return ch==="w"?"water":ch==="f"?"forest":ch==="o"?"ore":ch==="r"?"rock":"plain"; }
+    const bldAt = {}; BUILDINGS.forEach(b=> bldAt[key(b.r,b.c)] = b);
+    function waterDist(r,c){
+      let best = 99;
+      for(let i=0;i<ROWS;i++)for(let j=0;j<COLS;j++) if(terrAt(i,j)==="water"){ const d=Math.max(Math.abs(i-r),Math.abs(j-c)); if(d<best)best=d; }
+      return best;
+    }
+    function roadAdj(r,c){ return [[1,0],[-1,0],[0,1],[0,-1]].some(([dr,dc])=> ROADS.has(key(r+dr,c+dc))); }
+    function powered(r,c){ return BUILDINGS.some(b=> b.power && Math.max(Math.abs(b.r-r),Math.abs(b.c-c))<=POWER_R); }
+
+    const TILE = [];
+    for(let r=0;r<ROWS;r++){ TILE[r]=[]; for(let c=0;c<COLS;c++){
+      TILE[r][c] = { terr:terrAt(r,c), road:ROADS.has(key(r,c)), wd:waterDist(r,c), pw:powered(r,c), bld:bldAt[key(r,c)]||null };
+    }}
+
+    // ====== 渲染网格 ======
+    const grid = document.getElementById("grid");
+    grid.style.width = COLS*T+"px"; grid.style.height = ROWS*T+"px";
+    const ghost = document.getElementById("ghost");
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const t = TILE[r][c];
+      const el = document.createElement("button");
+      el.className = `tile ${t.terr}${t.road?" road":""}${t.pw?" powered":""}`;
+      el.style.left = c*T+"px"; el.style.top = r*T+"px";
+      el.dataset.r=r; el.dataset.c=c;
+      let inner = "";
+      if(t.bld) inner += `<span class="bld">${t.bld.g}</span>`;
+      inner += `<span class="wd">${t.wd>20?'∞':t.wd}</span>`;
+      el.innerHTML = inner;
+      el.addEventListener("mouseenter", ()=> inspect(r,c,false));
+      el.addEventListener("click", ()=> { inspect(r,c,true); placeGhost(r,c); });
+      grid.appendChild(el);
+    }
+
+    // ====== 建造菜单 ======
+    let curCat = "工业", curBld = null;
+    const catStrip = document.getElementById("catStrip");
+    CATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="cat"; b.textContent=c; b.setAttribute("aria-pressed", i===0);
+      b.addEventListener("click",()=>{ curCat=c; document.querySelectorAll(".cat").forEach(x=>x.setAttribute("aria-pressed", x.textContent===c)); renderMenu(); });
+      catStrip.appendChild(b); });
+
+    function reqSummary(b){
+      const parts=[]; if(b.road)parts.push("需道路"); if(b.water!==null)parts.push(b.water<=1?"紧邻水源":`水源≤${b.water}`); if(b.power)parts.push("需动力");
+      return parts.length?parts.join(" · "):"无特殊条件";
+    }
+    function renderMenu(){
+      const list = document.getElementById("blist"); list.innerHTML="";
+      MENU[curCat].forEach(b=>{
+        const el=document.createElement("button"); el.className="bcard"; el.setAttribute("aria-pressed", curBld&&curBld.id===b.id);
+        el.innerHTML=`<div class="bicon">${b.g}</div><div><div class="bname">${b.nm}</div><div class="breq">${reqSummary(b)} · ${b.cost}</div></div>`;
+        el.addEventListener("click",()=>{ curBld=b; document.body.classList.add("placing"); renderMenu(); renderReq(); paintFit();
+          document.getElementById("modeHud").innerHTML=`放置中：<b>${b.nm}</b> · 绿=可建 红=不可建`; });
+        list.appendChild(el);
+      });
+    }
+    function renderReq(){
+      if(!curBld) return;
+      document.getElementById("reqName").textContent=curBld.nm;
+      document.getElementById("reqCost").textContent=curBld.cost;
+      const items=[
+        ["地形", curBld.terr.map(t=>({plain:"空地",ore:"矿点",forest:"林地",rock:"山岩"}[t])).join("/")],
+        ["道路", curBld.road?"须邻接道路/窄轨":"无需道路"],
+        ["水源", curBld.water===null?"不限":curBld.water<=1?"须紧邻水域":`不超过 ${curBld.water} 格`],
+        ["能源", curBld.power?"须在蒸汽动力覆盖内":(curBld.gives?"自身提供动力":"无需动力")],
+      ];
+      document.getElementById("reqList").innerHTML=items.map(i=>`<div class="reqline"><span class="kbd">${i[0]}</span><span>${i[1]}</span></div>`).join("");
+    }
+
+    // ====== 适建性 ======
+    function validate(r,c){
+      const t=TILE[r][c], b=curBld, res={};
+      res.terr = b.terr.includes(t.terr) && !t.bld;
+      res.road = b.road ? (t.road||roadAdj(r,c)) : true;
+      res.water = b.water===null ? true : t.wd<=b.water;
+      res.power = b.power ? t.pw : true;
+      res.ok = res.terr&&res.road&&res.water&&res.power;
+      return res;
+    }
+    function paintFit(){
+      document.querySelectorAll(".tile").forEach(el=>{
+        el.classList.remove("fit-ok","fit-bad");
+        if(!curBld) return;
+        const v=validate(+el.dataset.r,+el.dataset.c);
+        el.classList.add(v.ok?"fit-ok":"fit-bad");
+      });
+    }
+
+    // ====== 右侧勘测 / 校验 ======
+    let selR=null, selC=null;
+    function inspect(r,c,lock){
+      if(lock){ selR=r; selC=c; document.querySelectorAll(".tile.sel").forEach(e=>e.classList.remove("sel"));
+        grid.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`).classList.add("sel"); }
+      const t=TILE[r][c];
+      const terrName={plain:"空地",water:"水域",forest:"林地",ore:"矿点",rock:"山岩"}[t.terr];
+      document.getElementById("insCoord").textContent=`坐标 (${r}, ${c})`;
+      document.getElementById("insTitle").textContent = t.bld? t.bld.label : terrName;
+      document.getElementById("insEyebrow").textContent = t.bld? "已有设施" : "地块勘测";
+
+      const checks=document.getElementById("checks"), verdict=document.getElementById("verdict");
+      const cb=document.getElementById("confirmBtn");
+      if(!curBld){ verdict.className="verdict idle"; verdict.textContent="先在左侧选择建筑，再校验地块"; checks.innerHTML=baseInfo(t); cb.disabled=true; return; }
+      if(t.bld){ verdict.className="verdict no"; verdict.textContent="该地块已被占用"; checks.innerHTML=baseInfo(t); cb.disabled=true; return; }
+      const v=validate(r,c);
+      const rows=[
+        ["地形适配", v.terr, `${terrName}${curBld.terr.includes(t.terr)?"":"（不允许）"}`],
+        ["道路接入", v.road, curBld.road?(v.road?"已邻接道路":"周边无道路"):"无需"],
+        ["水源距离", v.water, t.wd>20?"无水源":`${t.wd} 格${curBld.water!==null?` / 需 ${curBld.water<=1?'紧邻':'≤'+curBld.water}`:""}`],
+        ["能源覆盖", v.power, curBld.power?(t.pw?"蒸汽动力覆盖内":"动力未覆盖"):"无需"],
+      ];
+      checks.innerHTML = rows.map(x=>`<div class="check"><span class="ck-ic ${x[1]?'ok':'no'}">${x[1]?'✓':'✕'}</span><span>${x[0]}</span><span class="ck-val">${x[2]}</span></div>`).join("");
+      verdict.className="verdict "+(v.ok?"ok":"no");
+      verdict.textContent = v.ok? `✓ 可建造 · ${curBld.nm}（${curBld.cost}）` : "✕ 当前地块不满足建造条件";
+      cb.disabled = !v.ok;
+    }
+    function baseInfo(t){
+      return [
+        ["地形",true,({plain:"空地",water:"水域",forest:"林地",ore:"矿点",rock:"山岩"}[t.terr])],
+        ["道路",t.road,t.road?"道路地块":"无道路"],
+        ["水源",true,t.wd>20?"无水源":`${t.wd} 格`],
+        ["能源",t.pw,t.pw?"动力覆盖内":"未覆盖"],
+      ].map(x=>`<div class="check"><span class="ck-ic ${x[1]?'ok':'no'}">${x[1]?'✓':'·'}</span><span>${x[0]}</span><span class="ck-val">${x[2]}</span></div>`).join("");
+    }
+    function placeGhost(r,c){
+      ghost.style.display="block";
+      ghost.style.left=(c*T+2)+"px"; ghost.style.top=(r*T+2)+"px"; ghost.style.width=(T-4)+"px"; ghost.style.height=(T-4)+"px";
+    }
+
+    document.getElementById("confirmBtn").addEventListener("click",()=>{
+      if(selR===null||!curBld) return;
+      const el=grid.querySelector(`.tile[data-r="${selR}"][data-c="${selC}"]`);
+      el.insertAdjacentHTML("afterbegin", `<span class="bld">${curBld.g}</span>`);
+      TILE[selR][selC].bld={label:curBld.nm,g:curBld.g};
+      ghost.style.display="none";
+      document.getElementById("modeHud").innerHTML=`已建造 <b>${curBld.nm}</b> 于 (${selR}, ${selC})`;
+      inspect(selR,selC,true);
+    });
+    document.getElementById("cancelBtn").addEventListener("click",()=>{
+      curBld=null; document.body.classList.remove("placing"); ghost.style.display="none";
+      document.querySelectorAll(".tile").forEach(e=>e.classList.remove("fit-ok","fit-bad"));
+      renderMenu(); document.getElementById("modeHud").textContent="选择建筑后点击地块放置";
+      document.getElementById("verdict").className="verdict idle"; document.getElementById("verdict").textContent="先在左侧选择建筑，再校验地块";
+      document.getElementById("confirmBtn").disabled=true;
+    });
+
+    // 叠加层切换
+    document.querySelectorAll("[data-ov]").forEach(btn=>{
+      btn.addEventListener("click",()=>{ document.body.classList.toggle(btn.dataset.ov); btn.classList.toggle("primary"); });
+    });
+
+    renderMenu(); renderReq();
+  </script>
+</body>
+</html>

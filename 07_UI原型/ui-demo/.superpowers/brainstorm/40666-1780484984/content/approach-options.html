@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅顺口 UI 翻新路线</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #efe8d7;
+      --muted: #abb3ae;
+      --coal: #0b0f0f;
+      --iron: #151817;
+      --paper: #d8cfb9;
+      --line: rgba(216, 207, 185, .25);
+      --line-soft: rgba(216, 207, 185, .12);
+      --amber: #c9974c;
+      --blue: #566e75;
+      --brick: #8b4032;
+      --green: #738d67;
+      font-family: "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(90% 70% at 50% 0%, rgba(76, 83, 80, .16), transparent 60%),
+        linear-gradient(180deg, #0c1010, #080a0a);
+    }
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 26px 28px 32px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 20px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 28px; line-height: 1.14; letter-spacing: 0; }
+    .subtitle {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 980px;
+    }
+    .seal {
+      border: 1px solid rgba(201, 151, 76, .6);
+      color: #efd29d;
+      background: rgba(201, 151, 76, .1);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: 1.12fr .94fr .94fr;
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(216, 207, 185, .055), rgba(216, 207, 185, .025)),
+        rgba(13, 17, 16, .92);
+      min-height: 660px;
+      display: grid;
+      grid-template-rows: 310px 1fr;
+      box-shadow: 0 18px 48px rgba(0,0,0,.42);
+      overflow: hidden;
+    }
+    .card.recommended { border-color: rgba(201, 151, 76, .7); }
+    .mock {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(20, 25, 24, .92), rgba(7, 10, 10, .96));
+    }
+    .mock::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .45;
+      background:
+        linear-gradient(rgba(216,207,185,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216,207,185,.026) 1px, transparent 1px);
+      background-size: 68px 68px;
+    }
+    .top, .left, .right, .bottom, .notice, .panel, .label, .widget, .route, .node {
+      position: absolute;
+      z-index: 2;
+      border: 1px solid rgba(216,207,185,.24);
+      background: rgba(15, 18, 17, .88);
+    }
+    .top { left: 0; top: 0; right: 0; height: 36px; }
+    .left { left: 10px; top: 50px; bottom: 42px; width: 78px; }
+    .right { right: 10px; top: 50px; bottom: 42px; width: 82px; }
+    .bottom { left: 0; right: 0; bottom: 0; height: 34px; }
+    .notice { left: 108px; right: 108px; top: 50px; height: 28px; background: rgba(78, 37, 30, .86); border-color: rgba(139, 64, 50, .62); }
+    .route { left: 110px; right: 110px; top: 198px; height: 3px; background: rgba(201,151,76,.85); transform: rotate(-8deg); border: 0; }
+    .node { width: 28px; height: 28px; left: 49%; top: 58%; transform: translate(-50%, -50%); border-color: rgba(201,151,76,.7); background: rgba(51,43,31,.84); }
+    .fort-stack {
+      position: absolute;
+      inset: 46px 18px 44px;
+      z-index: 2;
+    }
+    .fort-layer {
+      position: absolute;
+      left: 11%;
+      right: 11%;
+      height: 42px;
+      transform: skewX(-18deg);
+      border: 1px solid rgba(216,207,185,.46);
+      box-shadow: 0 10px 20px rgba(0,0,0,.3);
+    }
+    .fort-layer:nth-child(1) { top: 14px; background: linear-gradient(90deg, #66716d, #a8aa9e); }
+    .fort-layer:nth-child(2) { top: 75px; background: linear-gradient(90deg, #5f503f, #b39769); }
+    .fort-layer:nth-child(3) { top: 136px; background: linear-gradient(90deg, #3d4240, #8d8980); }
+    .fort-layer:nth-child(4) { top: 197px; background: linear-gradient(90deg, #282c2b, #585a53); }
+    .manual {
+      position: absolute;
+      z-index: 2;
+      inset: 42px 20px 42px;
+      border: 1px solid rgba(216,207,185,.22);
+      background: rgba(180, 170, 146, .035);
+    }
+    .star {
+      position: absolute;
+      left: 10%;
+      top: 35px;
+      width: 190px;
+      height: 160px;
+      clip-path: polygon(50% 2%, 62% 30%, 95% 24%, 72% 49%, 90% 77%, 56% 68%, 35% 96%, 31% 61%, 3% 45%, 37% 35%);
+      border: 1px solid rgba(216,207,185,.75);
+      background:
+        repeating-linear-gradient(135deg, rgba(201,151,76,.18) 0 3px, transparent 3px 8px),
+        rgba(62, 58, 48, .34);
+    }
+    .cutline {
+      position: absolute;
+      left: 58%;
+      top: 28px;
+      bottom: 28px;
+      width: 2px;
+      background: rgba(201,151,76,.9);
+      box-shadow: 0 0 18px rgba(201,151,76,.45);
+    }
+    .body {
+      padding: 18px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      color: var(--amber);
+      font-weight: 900;
+      letter-spacing: .08em;
+      margin-bottom: 9px;
+    }
+    h2 { font-size: 21px; line-height: 1.25; margin-bottom: 10px; }
+    .body p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.58;
+      margin-bottom: 14px;
+    }
+    .list {
+      display: grid;
+      gap: 8px;
+      margin-top: 13px;
+    }
+    .item {
+      display: grid;
+      grid-template-columns: 9px 1fr;
+      gap: 10px;
+      color: #d9d0bd;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .item::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      margin-top: 5px;
+      background: var(--amber);
+    }
+    .warn .item::before { background: var(--blue); }
+    .risk .item::before { background: var(--brick); }
+    .bottom-note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border: 1px solid rgba(201,151,76,.52);
+      background: rgba(201,151,76,.08);
+      color: #d8cdb8;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    @media (max-width: 1200px) {
+      .cards { grid-template-columns: 1fr; }
+      header { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>翻新路线：把“换皮”升级为完整游戏界面</h1>
+        <p class="subtitle">Gemini 的处理方式值得沿用：不接受抽象占位图形，改成符合旅顺口设定的真实军政、筑城、外交、科技、建造对象。下面三种路线里，我推荐 A。</p>
+      </div>
+      <div class="seal">推荐：A · 领域准确全页面翻新</div>
+    </header>
+
+    <section class="cards">
+      <article class="card recommended">
+        <div class="mock">
+          <div class="manual">
+            <div class="star"></div>
+            <div class="cutline"></div>
+          </div>
+          <div class="top"></div><div class="left"></div><div class="right"></div><div class="bottom"></div>
+        </div>
+        <div class="body">
+          <div class="eyebrow">A · RECOMMENDED</div>
+          <h2>领域准确全页面翻新</h2>
+          <p>每个页面保留原有功能，但重建主视觉与信息层级：棱堡是真实剖面，战略图是海陆势力图，建造是寒地网格工地，科技树是军工档案，外交是五方关系案牍。</p>
+          <div class="list">
+            <div class="item">最符合你认可的视频和 Gemini 的工程判断。</div>
+            <div class="item">会调整布局位置、页面重心和组件语气。</div>
+            <div class="item">工作量中等偏高，但能形成“一个游戏”的完整感。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="mock">
+          <div class="fort-stack">
+            <div class="fort-layer"></div>
+            <div class="fort-layer"></div>
+            <div class="fort-layer"></div>
+            <div class="fort-layer"></div>
+          </div>
+          <div class="top"></div><div class="left"></div><div class="right"></div><div class="bottom"></div>
+        </div>
+        <div class="body">
+          <div class="eyebrow">B · LIMITED</div>
+          <h2>主视觉重点修正</h2>
+          <p>只重点修棱堡、战略地图、主界面三个最显眼页面，其余页面继承 UI kit 的颜色和控件，不深改专属布局。</p>
+          <div class="list warn">
+            <div class="item">更快，能解决最刺眼的问题。</div>
+            <div class="item">其它页面仍可能像原型稿，完整感不足。</div>
+            <div class="item">不完全满足“所有页面完整游戏界面”。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="mock">
+          <div class="top"></div><div class="left"></div><div class="right"></div><div class="bottom"></div>
+          <div class="notice"></div><div class="route"></div><div class="node"></div>
+        </div>
+        <div class="body">
+          <div class="eyebrow">C · COSMETIC</div>
+          <h2>统一换色与控件皮肤</h2>
+          <p>保留所有页面现有结构，只把颜色、面板、按钮、字体、边线改成冷铁军务风格。</p>
+          <div class="list risk">
+            <div class="item">最快、风险最低。</div>
+            <div class="item">无法解决“抽象图形不像设定对象”的根问题。</div>
+            <div class="item">容易继续显得像泛策略 HUD。</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="bottom-note">
+      我的建议是 A：统一风格只是底线，真正要做的是把每页的核心可视化从“现代抽象控件”改成“旅顺口世界里的具体军政工程对象”。实现时仍会尽量保留原 HTML 的数据和交互逻辑，避免把原型推倒重写。
+    </div>
+  </main>
+</body>
+</html>

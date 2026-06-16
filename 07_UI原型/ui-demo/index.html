@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 - UI Demo</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4efe1;
+      --muted: #b8bdba;
+      --panel: rgba(21, 26, 28, 0.86);
+      --panel-strong: rgba(13, 17, 19, 0.94);
+      --line: rgba(222, 214, 189, 0.26);
+      --steel: #7ba6b6;
+      --amber: #d59b42;
+      --green: #7bb36c;
+      --red: #c75a47;
+      --cyan: #5ab7c8;
+      --coal: #0b0f11;
+      --shadow: rgba(0, 0, 0, 0.54);
+      font-family: "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #0b0f11;
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-width: 1080px;
+      min-height: 720px;
+      background:
+        linear-gradient(180deg, rgba(8, 12, 14, 0.25), rgba(8, 12, 14, 0.72)),
+        url("assets/jinzhou-fortress-line.png") center / cover no-repeat;
+      isolation: isolate;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 72px 72px;
+      opacity: 0.38;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      display: grid;
+      grid-template-columns: 330px 1fr 350px;
+      align-items: stretch;
+      background: linear-gradient(180deg, rgba(8, 11, 12, 0.96), rgba(18, 23, 25, 0.86));
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 12px 28px var(--shadow);
+      z-index: 6;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 22px;
+      border-right: 1px solid var(--line);
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border: 2px solid var(--amber);
+      display: grid;
+      place-items: center;
+      background: rgba(213, 155, 66, 0.14);
+      color: var(--amber);
+      font-weight: 900;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .brand-sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .resources {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(96px, 1fr));
+      align-items: stretch;
+      min-width: 0;
+    }
+
+    .res {
+      padding: 12px 14px;
+      border-right: 1px solid rgba(222, 214, 189, 0.18);
+      min-width: 0;
+    }
+
+    .res-label {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .res-value {
+      margin-top: 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .res-value span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .res.good .res-value { color: var(--green); }
+    .res.warn .res-value { color: var(--amber); }
+    .res.danger .res-value { color: var(--red); }
+    .res.info .res-value { color: var(--cyan); }
+
+    .clock {
+      display: grid;
+      align-content: center;
+      justify-items: end;
+      gap: 5px;
+      padding: 0 22px;
+      border-left: 1px solid var(--line);
+      text-align: right;
+    }
+
+    .clock-main {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .clock-sub {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pill {
+      padding: 3px 8px;
+      border: 1px solid rgba(213, 155, 66, 0.45);
+      background: rgba(213, 155, 66, 0.12);
+      color: #f1c27c;
+    }
+
+    .left-panel,
+    .right-panel,
+    .bottom-bar,
+    .notice,
+    .minimap,
+    .map-legend {
+      position: absolute;
+      z-index: 5;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 36px var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .left-panel {
+      top: 92px;
+      left: 20px;
+      width: 370px;
+      bottom: 122px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 0;
+    }
+
+    .panel-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(6, 10, 11, 0.36);
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      color: var(--amber);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .building-name {
+      margin-top: 8px;
+      font-size: 28px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .building-meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .select-btn {
+      border: 0;
+      background: rgba(19, 25, 28, 0.92);
+      height: 54px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .select-btn[aria-pressed="true"] {
+      background: rgba(123, 166, 182, 0.24);
+      color: #e7f7ff;
+      box-shadow: inset 0 -3px 0 var(--steel);
+    }
+
+    .stats {
+      padding: 16px 18px;
+      overflow: auto;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 76px;
+      padding: 12px;
+      background: rgba(9, 13, 14, 0.48);
+      border: 1px solid rgba(222, 214, 189, 0.14);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stat-value {
+      margin-top: 7px;
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .stat-note {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .section-title {
+      margin: 18px 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #e8ddc7;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 76px 1fr 52px;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .bar {
+      height: 8px;
+      background: rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      background: var(--steel);
+    }
+
+    .bar.amber span { background: var(--amber); }
+    .bar.green span { background: var(--green); }
+    .bar.red span { background: var(--red); }
+
+    .panel-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(6, 10, 11, 0.32);
+    }
+
+    .cmd {
+      min-height: 42px;
+      border: 1px solid rgba(222, 214, 189, 0.22);
+      background: rgba(244, 239, 225, 0.08);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .cmd.primary {
+      border-color: rgba(213, 155, 66, 0.72);
+      background: rgba(213, 155, 66, 0.22);
+      color: #ffe0a5;
+    }
+
+    .right-panel {
+      top: 92px;
+      right: 20px;
+      width: 380px;
+      bottom: 122px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+
+    .alerts {
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(222, 214, 189, 0.15);
+    }
+
+    .event:last-child { border-bottom: 0; }
+
+    .event-icon {
+      height: 40px;
+      display: grid;
+      place-items: center;
+      background: rgba(244, 239, 225, 0.08);
+      border: 1px solid rgba(222, 214, 189, 0.18);
+      font-size: 20px;
+    }
+
+    .event-title {
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .event-body {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .logistics {
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(6, 10, 11, 0.32);
+    }
+
+    .train-row {
+      display: grid;
+      grid-template-columns: 58px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(222, 214, 189, 0.12);
+    }
+
+    .train-row:last-child { border-bottom: 0; }
+
+    .train-code {
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .train-status {
+      color: #e3d7bd;
+      font-weight: 800;
+    }
+
+    .map-layer {
+      position: absolute;
+      inset: 72px 0 100px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .map-layer svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .route {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.65));
+    }
+
+    .route.wall { stroke: rgba(213, 155, 66, 0.88); }
+    .route.rail {
+      stroke: rgba(90, 183, 200, 0.82);
+      stroke-dasharray: 14 12;
+      animation: dash 3s linear infinite;
+    }
+    .route.threat {
+      stroke: rgba(199, 90, 71, 0.78);
+      stroke-dasharray: 8 10;
+      animation: dash 2.4s linear infinite reverse;
+    }
+
+    @keyframes dash {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -52; }
+    }
+
+    .node {
+      position: absolute;
+      z-index: 4;
+      width: 46px;
+      height: 46px;
+      border: 2px solid rgba(244, 239, 225, 0.82);
+      background: rgba(10, 15, 17, 0.78);
+      box-shadow: 0 0 0 7px rgba(10, 15, 17, 0.24), 0 12px 24px rgba(0,0,0,0.48);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      pointer-events: auto;
+      transform: translate(-50%, -50%);
+    }
+
+    .node::after {
+      content: attr(data-label);
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 150px;
+      padding: 5px 9px;
+      color: #fff8e7;
+      background: rgba(9, 13, 14, 0.76);
+      border: 1px solid rgba(222, 214, 189, 0.28);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .node[aria-pressed="true"] {
+      border-color: var(--amber);
+      background: rgba(213, 155, 66, 0.28);
+    }
+
+    .node .glyph {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .node.west { left: 10.8%; top: 74%; }
+    .node.central { left: 45.5%; top: 61%; }
+    .node.east { left: 82%; top: 45%; }
+    .node.logistics-node { left: 60%; top: 34%; }
+
+    .notice {
+      left: 420px;
+      top: 92px;
+      right: 420px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 18px;
+      background: rgba(62, 25, 18, 0.82);
+      border-color: rgba(199, 90, 71, 0.54);
+    }
+
+    .notice strong {
+      color: #ffd0bd;
+      font-size: 14px;
+    }
+
+    .notice span {
+      color: #f1d8cf;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .notice .count {
+      flex: none;
+      color: #ffd57d;
+      font-weight: 900;
+    }
+
+    .map-legend {
+      left: 420px;
+      bottom: 122px;
+      width: 310px;
+      padding: 13px 14px;
+      background: rgba(10, 15, 17, 0.72);
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-line {
+      height: 3px;
+      background: var(--amber);
+    }
+
+    .legend-line.rail {
+      background: repeating-linear-gradient(90deg, var(--cyan) 0 12px, transparent 12px 20px);
+    }
+
+    .legend-line.threat {
+      background: repeating-linear-gradient(90deg, var(--red) 0 8px, transparent 8px 16px);
+    }
+
+    .minimap {
+      right: 420px;
+      bottom: 122px;
+      width: 220px;
+      height: 150px;
+      background: rgba(10, 15, 17, 0.82);
+      overflow: hidden;
+    }
+
+    .minimap::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      background:
+        linear-gradient(135deg, transparent 0 25%, rgba(123, 166, 182, 0.28) 26% 33%, transparent 34%),
+        radial-gradient(circle at 30% 68%, rgba(213,155,66,0.85) 0 5px, transparent 6px),
+        radial-gradient(circle at 52% 55%, rgba(213,155,66,0.85) 0 5px, transparent 6px),
+        radial-gradient(circle at 76% 42%, rgba(213,155,66,0.85) 0 5px, transparent 6px),
+        linear-gradient(90deg, rgba(90,183,200,0.35), transparent 55%);
+      border: 1px solid rgba(222, 214, 189, 0.18);
+    }
+
+    .minimap-label {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .bottom-bar {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 100px;
+      display: grid;
+      grid-template-columns: 390px 1fr 390px;
+      gap: 1px;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      background: rgba(10, 14, 15, 0.95);
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-right: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    .tool-group:last-child {
+      border-right: 0;
+      justify-content: flex-end;
+    }
+
+    .tool-btn {
+      width: 64px;
+      height: 64px;
+      display: grid;
+      grid-template-rows: 30px 1fr;
+      place-items: center;
+      border: 1px solid rgba(222, 214, 189, 0.18);
+      background: rgba(244, 239, 225, 0.07);
+      cursor: pointer;
+    }
+
+    .tool-btn.active {
+      border-color: rgba(213, 155, 66, 0.7);
+      background: rgba(213, 155, 66, 0.18);
+    }
+
+    .tool-icon {
+      font-size: 23px;
+      line-height: 1;
+    }
+
+    .tool-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .mode-strip {
+      display: flex;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .mode {
+      min-width: 108px;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid rgba(222, 214, 189, 0.18);
+      background: rgba(244, 239, 225, 0.06);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mode.active {
+      color: #fff3d8;
+      border-color: rgba(123, 166, 182, 0.72);
+      background: rgba(123, 166, 182, 0.18);
+    }
+
+    .speed {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .speed strong {
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .tiny {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(222, 214, 189, 0.18);
+      background: rgba(244, 239, 225, 0.06);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+
+    @media (max-width: 1280px) {
+      .topbar {
+        grid-template-columns: 280px 1fr 300px;
+      }
+
+      .left-panel {
+        width: 330px;
+      }
+
+      .right-panel {
+        width: 340px;
+      }
+
+      .notice {
+        left: 370px;
+        right: 370px;
+      }
+
+      .map-legend {
+        left: 370px;
+        width: 260px;
+      }
+
+      .minimap {
+        right: 370px;
+        width: 210px;
+      }
+    }
+
+    .campaign-table {
+      --ink: #f0eadc;
+      --muted: #b6b0a2;
+      --line: rgba(216, 207, 185, 0.25);
+      --steel: #61777d;
+      --amber: #c99a4d;
+      --green: #748d65;
+      --red: #b65a48;
+      --cyan: #6f8f95;
+      --coal: #090c0c;
+      --shadow: rgba(0, 0, 0, 0.55);
+      background:
+        linear-gradient(90deg, rgba(8, 10, 10, 0.78), transparent 26%, transparent 74%, rgba(8, 10, 10, 0.78)),
+        linear-gradient(180deg, rgba(12, 16, 16, 0.18), rgba(8, 10, 10, 0.44)),
+        url("assets/jinzhou-fortress-line.png") center / cover no-repeat;
+    }
+
+    .campaign-table::before {
+      background:
+        radial-gradient(110% 95% at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.52)),
+        linear-gradient(180deg, rgba(216,207,185,0.035), transparent 22%);
+      opacity: 1;
+      mix-blend-mode: normal;
+    }
+
+    .campaign-table .topbar,
+    .campaign-table .bottom-bar,
+    .campaign-table .left-panel,
+    .campaign-table .right-panel,
+    .campaign-table .notice,
+    .campaign-table .map-legend,
+    .campaign-table .minimap {
+      background:
+        linear-gradient(180deg, rgba(216,207,185,0.055), rgba(216,207,185,0.018)),
+        rgba(14, 17, 16, 0.9);
+      border-color: var(--line);
+      backdrop-filter: none;
+    }
+
+    .campaign-table .left-panel,
+    .campaign-table .right-panel {
+      background:
+        linear-gradient(180deg, rgba(216,207,185,0.055), rgba(216,207,185,0.018)),
+        rgba(14, 17, 16, 0.93);
+    }
+
+    .campaign-table .notice {
+      background: rgba(82, 40, 32, 0.86);
+    }
+
+    .dispatch-map .route.wall { stroke: rgba(201, 154, 77, 0.86); }
+    .dispatch-map .route.rail { stroke: rgba(216, 207, 185, 0.62); stroke-dasharray: 16 13; }
+    .dispatch-map .route.threat { stroke: rgba(142, 64, 51, 0.82); stroke-dasharray: 9 10; }
+
+    .order-node {
+      border-color: rgba(216,207,185,0.72);
+      background: rgba(29, 30, 25, 0.82);
+      box-shadow: 0 0 0 6px rgba(8, 10, 10, 0.25), 0 12px 22px rgba(0,0,0,0.42);
+    }
+
+    .order-node .glyph {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .order-node[aria-pressed="true"] {
+      border-color: var(--brass);
+      background: rgba(82, 61, 32, 0.84);
+    }
+
+    .tool-icon {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--paper);
+    }
+  </style>
+</head>
+<body>
+  <main class="app campaign-table" aria-label="进击旅顺口策略经营界面示意">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div>
+          <div class="brand-title">进击旅顺口</div>
+          <div class="brand-sub">旅顺要塞城市群 · 1640 冬季</div>
+        </div>
+      </div>
+      <section class="resources" aria-label="辖区资源">
+        <div class="res warn"><div class="res-label">粮食库存</div><div class="res-value">9,840<span>吨</span></div></div>
+        <div class="res good"><div class="res-label">煤炭</div><div class="res-value">6,120<span>吨</span></div></div>
+        <div class="res info"><div class="res-label">生铁日产</div><div class="res-value">31<span>吨</span></div></div>
+        <div class="res warn"><div class="res-label">弹药储备</div><div class="res-value">60<span>天</span></div></div>
+        <div class="res good"><div class="res-label">归化民</div><div class="res-value">78k</div></div>
+        <div class="res danger"><div class="res-label">忠诚风险</div><div class="res-value">31<span>%</span></div></div>
+        <div class="res info"><div class="res-label">蒸汽功率</div><div class="res-value">2,420<span>hp</span></div></div>
+        <div class="res warn"><div class="res-label">财政结余</div><div class="res-value">16.8<span>万两</span></div></div>
+      </section>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>06:40</span><span class="pill">橙色警戒</span><span>-12℃</span></div>
+      </div>
+    </header>
+
+    <section class="notice" aria-label="当前警报">
+      <strong>前线警报</strong>
+      <span>复州方向斥候活动增加；金州地峡防线进入黎明战备哨位。</span>
+      <div class="count">T-02:18</div>
+    </section>
+
+    <aside class="left-panel">
+      <div class="panel-head">
+        <div class="eyebrow">选中设施</div>
+        <div class="building-name" id="buildingName">南关堡</div>
+        <div class="building-meta" id="buildingMeta">地峡中央 · 主棱堡 · 前线指挥所</div>
+      </div>
+      <nav class="selector" aria-label="选择设施">
+        <button class="select-btn" data-target="west" aria-pressed="false">渤海堡</button>
+        <button class="select-btn" data-target="central" aria-pressed="true">南关堡</button>
+        <button class="select-btn" data-target="east" aria-pressed="false">黄海堡</button>
+        <button class="select-btn" data-target="logistics" aria-pressed="false">二里桥</button>
+      </nav>
+      <div class="stats">
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-label">守军</div><div class="stat-value" id="garrison">720</div><div class="stat-note">炮兵连×3 · 步兵连×2</div></div>
+          <div class="stat"><div class="stat-label">主炮</div><div class="stat-value" id="guns">26</div><div class="stat-note" id="gunsNote">32磅炮×6 · 榴弹炮×8</div></div>
+          <div class="stat"><div class="stat-label">粮食</div><div class="stat-value" id="food">90天</div><div class="stat-note">地下粮库满编储量</div></div>
+          <div class="stat"><div class="stat-label">弹药</div><div class="stat-value" id="ammo">60天</div><div class="stat-note">按中等烈度估算</div></div>
+        </div>
+        <div class="section-title"><span>运行状态</span><span id="condition">战备良好</span></div>
+        <div class="bar-row"><span>工事完整</span><div class="bar green"><span id="barWorks" style="width: 92%"></span></div><strong id="works">92%</strong></div>
+        <div class="bar-row"><span>兵员疲劳</span><div class="bar amber"><span id="barFatigue" style="width: 38%"></span></div><strong id="fatigue">38%</strong></div>
+        <div class="bar-row"><span>补给压力</span><div class="bar red"><span id="barSupply" style="width: 46%"></span></div><strong id="supply">46%</strong></div>
+        <div class="section-title"><span>设施说明</span><span>棱堡线</span></div>
+        <p id="description" style="margin:0;color:var(--muted);font-size:13px;line-height:1.55;">
+          防线核心，主堡外接两个半月堡，电报中枢直通旅顺城区与济州岛。目标不是全歼清军，而是拖慢推进速度。
+        </p>
+      </div>
+      <div class="panel-actions">
+        <button class="cmd primary">冬季加固</button>
+        <button class="cmd">调拨弹药</button>
+      </div>
+    </aside>
+
+    <div class="map-layer dispatch-map" aria-hidden="true">
+      <svg viewBox="0 0 1000 620" preserveAspectRatio="none">
+        <path class="route wall" d="M75 495 C210 455 330 405 455 360 C610 300 735 270 850 245" />
+        <path class="route rail" d="M612 205 C580 255 540 305 488 355 C440 402 350 455 212 505" />
+        <path class="route threat" d="M856 110 C790 172 736 212 688 254" />
+      </svg>
+    </div>
+
+    <button class="node order-node west" data-target="west" data-label="渤海堡" aria-pressed="false"><span class="glyph">西</span></button>
+    <button class="node order-node central" data-target="central" data-label="南关堡" aria-pressed="true"><span class="glyph">中</span></button>
+    <button class="node order-node east" data-target="east" data-label="黄海堡" aria-pressed="false"><span class="glyph">东</span></button>
+    <button class="node order-node logistics-node" data-target="logistics" data-label="二里桥后勤总站" aria-pressed="false"><span class="glyph">站</span></button>
+
+    <section class="map-legend" aria-label="地图图例">
+      <div class="legend-row"><div class="legend-line"></div><span>连续棱堡墙</span><strong>3.2km</strong></div>
+      <div class="legend-row"><div class="legend-line rail"></div><span>窄轨补给线</span><strong>2班/日</strong></div>
+      <div class="legend-row"><div class="legend-line threat"></div><span>清军侦察方向</span><strong>复州</strong></div>
+    </section>
+
+    <section class="minimap" aria-label="小地图">
+      <div class="minimap-label">辽南辖区 / 金州地峡</div>
+    </section>
+
+    <aside class="right-panel">
+      <div class="panel-head">
+        <div class="eyebrow">事件与任务</div>
+        <div class="building-name" style="font-size:24px">防线值班日志</div>
+        <div class="building-meta">自动暂停：重大战备、补给中断、疫情警报</div>
+      </div>
+      <div class="alerts">
+        <div class="event">
+          <div class="event-icon">!</div>
+          <div><div class="event-title">黎明战备完成</div><div class="event-body">三堡炮手已检查炮位；夜间哨岗密度恢复常态。</div></div>
+        </div>
+        <div class="event">
+          <div class="event-icon">☼</div>
+          <div><div class="event-title">极寒夜规程</div><div class="event-body">-15℃以下哨兵换班缩短至40分钟，棉衣消耗增加。</div></div>
+        </div>
+        <div class="event">
+          <div class="event-icon">↯</div>
+          <div><div class="event-title">电报中继正常</div><div class="event-body">南关堡、旅顺城区、济州岛链路延迟低于2小时。</div></div>
+        </div>
+        <div class="event">
+          <div class="event-icon">▦</div>
+          <div><div class="event-title">干壕注水进度 64%</div><div class="event-body">预计今晚结冰成障；炮车通过效率下降。</div></div>
+        </div>
+      </div>
+      <div class="logistics">
+        <div class="section-title" style="margin-top:0"><span>二里桥补给调度</span><span>窄轨</span></div>
+        <div class="train-row"><span class="train-code">L-07</span><span>粮食、棉衣、防冻膏</span><span class="train-status">08:10 到达</span></div>
+        <div class="train-row"><span class="train-code">A-12</span><span>24磅炮弹、火药桶</span><span class="train-status">装车中</span></div>
+        <div class="train-row"><span class="train-code">M-03</span><span>医护排、担架、烈酒</span><span class="train-status">待命</span></div>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="tool-group">
+        <button class="tool-btn active" title="道路与铁路"><span class="tool-icon">⌁</span><span class="tool-label">交通</span></button>
+        <button class="tool-btn" title="军事工事"><span class="tool-icon">▰</span><span class="tool-label">工事</span></button>
+        <button class="tool-btn" title="工业建筑"><span class="tool-icon">工</span><span class="tool-label">工业</span></button>
+        <button class="tool-btn" title="民生建筑"><span class="tool-icon">⌂</span><span class="tool-label">民生</span></button>
+      </div>
+      <div class="tool-group">
+        <div class="mode-strip">
+          <button class="mode active">补给网络</button>
+          <button class="mode">火力覆盖</button>
+          <button class="mode">人口忠诚</button>
+          <button class="mode">冻土风险</button>
+          <button class="mode">贸易流向</button>
+        </div>
+      </div>
+      <div class="tool-group">
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▮▮</button><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const data = {
+      west: {
+        name: "渤海堡",
+        meta: "西翼主堡 · 俯瞰金州湾",
+        garrison: "380",
+        guns: "10",
+        gunsNote: "32磅炮×4 · 榴弹炮×6",
+        food: "90天",
+        ammo: "60天",
+        works: 88,
+        fatigue: 34,
+        supply: 41,
+        condition: "海岸警戒",
+        description: "西堡压住渤海湾北侧高地，负责拦截沿海侧翼渗透，并和南关堡构成西段交叉火力。"
+      },
+      central: {
+        name: "南关堡",
+        meta: "地峡中央 · 主棱堡 · 前线指挥所",
+        garrison: "720",
+        guns: "26",
+        gunsNote: "32磅炮×6 · 榴弹炮×8",
+        food: "90天",
+        ammo: "60天",
+        works: 92,
+        fatigue: 38,
+        supply: 46,
+        condition: "战备良好",
+        description: "防线核心，主堡外接两个半月堡，电报中枢直通旅顺城区与济州岛。目标不是全歼清军，而是拖慢推进速度。"
+      },
+      east: {
+        name: "黄海堡",
+        meta: "东翼主堡 · 监视大连湾方向",
+        garrison: "380",
+        guns: "10",
+        gunsNote: "32磅炮×4 · 榴弹炮×6",
+        food: "88天",
+        ammo: "58天",
+        works: 84,
+        fatigue: 42,
+        supply: 49,
+        condition: "斥候接触",
+        description: "东堡面向复州方向，负责提防清军沿黄海岸南下，是当前侦察压力最大的火力节点。"
+      },
+      logistics: {
+        name: "二里桥后勤总站",
+        meta: "防线后方2公里 · 仓库与预备队",
+        garrison: "600",
+        guns: "营级",
+        gunsNote: "炮兵营 · 预备队营盘",
+        food: "5仓",
+        ammo: "3库",
+        works: 76,
+        fatigue: 29,
+        supply: 62,
+        condition: "调度繁忙",
+        description: "二里桥负责把旅顺城区来的窄轨物资转为骡马车，向三座棱堡分发粮食、弹药和御寒物资。"
+      }
+    };
+
+    const ids = ["buildingName", "buildingMeta", "garrison", "guns", "gunsNote", "food", "ammo", "condition", "description", "works", "fatigue", "supply"];
+
+    function setTarget(key) {
+      const item = data[key];
+      document.getElementById("buildingName").textContent = item.name;
+      document.getElementById("buildingMeta").textContent = item.meta;
+      document.getElementById("garrison").textContent = item.garrison;
+      document.getElementById("guns").textContent = item.guns;
+      document.getElementById("gunsNote").textContent = item.gunsNote;
+      document.getElementById("food").textContent = item.food;
+      document.getElementById("ammo").textContent = item.ammo;
+      document.getElementById("condition").textContent = item.condition;
+      document.getElementById("description").textContent = item.description;
+      document.getElementById("works").textContent = item.works + "%";
+      document.getElementById("fatigue").textContent = item.fatigue + "%";
+      document.getElementById("supply").textContent = item.supply + "%";
+      document.getElementById("barWorks").style.width = item.works + "%";
+      document.getElementById("barFatigue").style.width = item.fatigue + "%";
+      document.getElementById("barSupply").style.width = item.supply + "%";
+
+      document.querySelectorAll("[data-target]").forEach((el) => {
+        el.setAttribute("aria-pressed", el.dataset.target === key ? "true" : "false");
+      });
+    }
+
+    document.querySelectorAll("[data-target]").forEach((el) => {
+      el.addEventListener("click", () => setTarget(el.dataset.target));
+    });
+
+    let tick = 138;
+    setInterval(() => {
+      tick -= 1;
+      if (tick < 0) tick = 138;
+      const mm = String(Math.floor(tick / 60)).padStart(2, "0");
+      const ss = String(tick % 60).padStart(2, "0");
+      document.querySelector(".count").textContent = `T-${mm}:${ss}`;
+    }, 1000);
+
+    void ids;
+  </script>
+</body>
+</html>

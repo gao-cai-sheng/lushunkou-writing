@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅顺口 UI 风格修正对照</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --paper: #d8cfb9;
+      --ink: #f0eadc;
+      --muted: #aeb5b2;
+      --coal: #0c1010;
+      --iron: #171b1a;
+      --line: rgba(216, 207, 185, .26);
+      --line-soft: rgba(216, 207, 185, .13);
+      --amber: #c9974c;
+      --blue: #546b73;
+      --brick: #8a3f32;
+      --smoke: #76817f;
+      font-family: "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(12, 16, 16, .96), rgba(18, 19, 18, .98)),
+        #0c1010;
+    }
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    .sub {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .tag {
+      border: 1px solid rgba(201, 151, 76, .55);
+      color: #f1d29b;
+      background: rgba(201, 151, 76, .12);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+    }
+    .card {
+      min-height: 560px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(216, 207, 185, .06), rgba(216, 207, 185, .025)),
+        rgba(13, 17, 17, .9);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .42);
+      overflow: hidden;
+    }
+    .image {
+      height: 250px;
+      border-bottom: 1px solid var(--line);
+      background: #0a0c0c;
+      overflow: hidden;
+    }
+    .image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(.86) contrast(.98);
+    }
+    .body {
+      padding: 18px;
+    }
+    .label {
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: 20px;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .body p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.58;
+      margin-bottom: 14px;
+    }
+    .notes {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .note {
+      display: grid;
+      grid-template-columns: 9px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: #d9d0bd;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .note::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      margin-top: 5px;
+      background: var(--amber);
+    }
+    .mini-ui {
+      height: 250px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(37, 43, 42, .88), rgba(10, 13, 13, .92)),
+        url("/files/reference-video-frame.png") center / cover no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+    .mini-ui::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(8, 10, 10, .82), transparent 22%, transparent 78%, rgba(8, 10, 10, .82)),
+        linear-gradient(180deg, rgba(8, 10, 10, .20), rgba(8, 10, 10, .48));
+    }
+    .mini-top,
+    .mini-left,
+    .mini-right,
+    .mini-bottom,
+    .mini-alert,
+    .mini-node,
+    .mini-line {
+      position: absolute;
+      z-index: 2;
+      border: 1px solid rgba(216, 207, 185, .28);
+      background: rgba(17, 20, 19, .84);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, .38);
+    }
+    .mini-top { left: 0; right: 0; top: 0; height: 34px; background: rgba(15, 17, 16, .94); }
+    .mini-left { left: 10px; top: 48px; width: 88px; height: 152px; }
+    .mini-right { right: 10px; top: 48px; width: 92px; height: 152px; }
+    .mini-bottom { left: 0; right: 0; bottom: 0; height: 36px; background: rgba(13, 15, 14, .95); }
+    .mini-alert { left: 118px; right: 118px; top: 48px; height: 28px; background: rgba(72, 35, 28, .86); border-color: rgba(138, 63, 50, .62); }
+    .mini-line { left: 132px; right: 122px; top: 156px; height: 3px; background: rgba(201, 151, 76, .85); border: 0; transform: rotate(-9deg); box-shadow: 0 1px 8px rgba(0,0,0,.55); }
+    .mini-node { left: 50%; top: 55%; width: 30px; height: 30px; transform: translate(-50%, -50%); background: rgba(42, 39, 32, .85); border-color: rgba(201, 151, 76, .7); }
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 16px;
+    }
+    .sw {
+      height: 30px;
+      border: 1px solid rgba(216, 207, 185, .18);
+    }
+    .scope {
+      margin-top: 22px;
+      border: 1px solid rgba(201, 151, 76, .55);
+      background: rgba(201, 151, 76, .08);
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .scope h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #f4d59d;
+    }
+    .scope p {
+      color: #d5cab6;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .scope { grid-template-columns: 1fr; }
+      .head { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div>
+        <h1>旅顺口 UI 风格修正对照</h1>
+        <p class="sub">目标是把 Claude 原型从偏现代 HUD 的质感，拉回早期视频/生成图的冷冬、军政、工业、战地文书语气，同时保留策略经营界面的密度和可读性。</p>
+      </div>
+      <div class="tag">建议修正：主界面 + 共享 UI Kit</div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <div class="image"><img src="/files/reference-war-economy.png" alt="参考生成图"></div>
+        <div class="body">
+          <div class="label">REFERENCE</div>
+          <h2>参考风格：冬季战地行政现场</h2>
+          <p>低饱和冷灰、雪地、烟雾、木箱、布帐、铁器和暖灯。画面不是“赛博仪表”，而是历史工业飞地里的军务秩序。</p>
+          <div class="notes">
+            <div class="note">面板应像军务档案、油布地图和铁制铭牌。</div>
+            <div class="note">强调冷暖对比：大面积冷灰，少量暖橙承担焦点。</div>
+            <div class="note">减少发光、网格和高饱和青色。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="image"><img src="/files/current-ui.png" alt="当前 UI 截图"></div>
+        <div class="body">
+          <div class="label">CURRENT</div>
+          <h2>当前问题：策略 HUD 味道过强</h2>
+          <p>布局密度可用，但黑玻璃面板、亮青路线、网格层和大号数字让视觉重心从“旅顺口历史世界”偏到泛科幻/现代数据看板。</p>
+          <div class="notes">
+            <div class="note">背景图被压暗，失去视频样片的雪地空气感。</div>
+            <div class="note">资源栏和按钮的颜色过于游戏化。</div>
+            <div class="note">节点图标更像抽象 HUD，不像地图上的军务标注。</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="mini-ui" aria-label="拟定修正方向示意">
+          <div class="mini-top"></div>
+          <div class="mini-left"></div>
+          <div class="mini-right"></div>
+          <div class="mini-alert"></div>
+          <div class="mini-line"></div>
+          <div class="mini-node"></div>
+          <div class="mini-bottom"></div>
+        </div>
+        <div class="body">
+          <div class="label">PROPOSED</div>
+          <h2>拟定方向：冷铁军务界面</h2>
+          <p>保留三栏管理布局，改为低透明深铁面板、羊皮纸色文字、砖红警报、钝金路线、少量海军蓝/钢蓝辅助。界面像压在战役地图上的军政调度台。</p>
+          <div class="palette">
+            <div class="sw" style="background:#0c1010"></div>
+            <div class="sw" style="background:#1a1c1a"></div>
+            <div class="sw" style="background:#d8cfb9"></div>
+            <div class="sw" style="background:#c9974c"></div>
+            <div class="sw" style="background:#546b73"></div>
+            <div class="sw" style="background:#8a3f32"></div>
+          </div>
+          <div class="notes">
+            <div class="note">去掉全屏科技网格，换成轻微暗角和纸面纹理。</div>
+            <div class="note">路线和节点降低亮度，改成地图标注与军令旗色。</div>
+            <div class="note">按钮与状态条统一成铁、纸、蜡封、灯火的材质语气。</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="scope">
+      <div>
+        <h3>推荐范围</h3>
+        <p>先修 `index.html` 的主界面视觉，并同步 `ui-kit.css` 的变量、基础面板、按钮、状态组件。这样首屏和其它页面的基础色彩会统一，改动范围可控。</p>
+      </div>
+      <div>
+        <h3>不建议本轮做</h3>
+        <p>不逐页重画 `strategic-map`、`tech-tree` 等功能页的专属布局，除非你希望这次把所有页面都按同一风格做完整视觉翻新。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

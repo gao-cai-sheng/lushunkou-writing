@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__plugin_ecc_exa__web_fetch_exa",
+  "tool_input_preview": "{\"urls\":[\"https://www.zhihu.com/question/2044878223763403729/answer/2046932820413698488\"],\"maxCharacters\":6000}",
+  "error": "Error fetching URL(s): https://www.zhihu.com/question/2044878223763403729/answer/2046932820413698488: CRAWL_LIVECRAWL_TIMEOUT",
+  "timestamp": "2026-06-07T13:26:59.516Z",
+  "retry_count": 1
+}

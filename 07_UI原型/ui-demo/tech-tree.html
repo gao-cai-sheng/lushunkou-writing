@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 科技树</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    .left-rail {
+      top: 92px; left: 20px; width: 248px; bottom: 108px;
+      display: grid; grid-template-rows: auto 1fr auto; min-height: 0;
+    }
+    .rail-list { overflow: auto; padding: 8px; }
+    .line-btn {
+      width: 100%; text-align: left; display: grid;
+      grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px;
+      border: 1px solid transparent; background: transparent;
+      padding: 11px 10px; cursor: pointer; color: var(--muted);
+    }
+    .line-btn:hover { background: rgba(244,239,225,0.05); }
+    .line-btn[aria-pressed="true"] {
+      background: rgba(123,166,182,0.16); border-color: rgba(123,166,182,0.5); color: #eaf6ff;
+    }
+    .line-glyph { font-size: 18px; color: var(--amber); }
+    .line-name { font-size: 14px; font-weight: 800; line-height: 1.15; }
+    .line-sub { font-size: 11px; color: var(--faint); margin-top: 2px; }
+    .line-count { font-size: 11px; color: var(--faint); }
+
+    .rp-box { padding: 14px 16px; border-top: 1px solid var(--line); background: rgba(6,10,11,0.4); }
+    .rp-row { display: flex; align-items: baseline; justify-content: space-between; }
+    .rp-big { font-size: 30px; font-weight: 900; color: var(--cyan); }
+    .rp-big span { font-size: 13px; color: var(--muted); font-weight: 700; }
+
+    .canvas-wrap {
+      position: absolute; top: 92px; left: 284px; right: 372px; bottom: 108px;
+      border: 1px solid var(--line); background: rgba(10,15,17,0.5);
+      overflow: auto; z-index: 4; box-shadow: 0 16px 36px var(--shadow);
+    }
+    .canvas-head {
+      position: sticky; top: 0; left: 0; z-index: 3;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px; background: rgba(8,12,13,0.92);
+      border-bottom: 1px solid var(--line); backdrop-filter: blur(6px);
+    }
+    .canvas-head h2 { margin: 0; font-size: 16px; font-weight: 900; }
+    .canvas-head .lead { font-size: 12px; color: var(--muted); }
+    .tree { position: relative; min-width: 920px; min-height: 560px; padding: 8px; }
+    .tree svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .edge { fill: none; stroke: rgba(222,214,189,0.22); stroke-width: 2; }
+    .edge.done { stroke: rgba(123,179,108,0.5); }
+
+    .node {
+      position: absolute; width: 150px; transform: translateY(-50%);
+      border: 1px solid var(--line); background: rgba(18,23,25,0.96);
+      padding: 9px 11px; cursor: pointer; text-align: left; z-index: 2;
+    }
+    .node:hover { border-color: var(--steel); }
+    .node[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--amber); border-color: var(--amber); }
+    .node .nm { font-size: 13px; font-weight: 800; line-height: 1.2; }
+    .node .ce { margin-top: 6px; font-size: 11px; color: var(--faint); display: flex; gap: 6px; align-items: center; }
+    .node .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .node.done   { background: rgba(123,179,108,0.14); border-color: rgba(123,179,108,0.45); }
+    .node.done   .dot { background: var(--green); }
+    .node.active { background: rgba(213,155,66,0.16); border-color: rgba(213,155,66,0.6); animation: pulse 1.8s ease-in-out infinite; }
+    .node.active .dot { background: var(--amber); }
+    .node.avail  .dot { background: var(--steel); }
+    .node.locked { opacity: 0.5; }
+    .node.locked .dot { background: var(--faint); }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(213,155,66,0.0);} 50% { box-shadow: 0 0 0 3px rgba(213,155,66,0.35);} }
+
+    .detail { top: 92px; right: 20px; width: 336px; bottom: 108px; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+    .detail-body { padding: 16px 18px; overflow: auto; }
+    .kv { display: grid; grid-template-columns: 72px 1fr; gap: 6px 12px; font-size: 13px; margin: 10px 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; font-weight: 700; }
+    .effect-card { margin-top: 14px; padding: 13px; background: rgba(123,166,182,0.1); border: 1px solid rgba(123,166,182,0.32); font-size: 13px; line-height: 1.5; }
+    .legend { display: flex; gap: 16px; padding: 10px 18px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+    .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+    .research-board {
+      background:
+        radial-gradient(80% 70% at 52% 28%, rgba(216,207,185,0.065), transparent 68%),
+        linear-gradient(180deg, rgba(24,30,29,0.92), rgba(8,10,10,0.98));
+    }
+    .blueprint-grid .tree {
+      background-image:
+        linear-gradient(rgba(216,207,185,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216,207,185,0.035) 1px, transparent 1px);
+      background-size: 72px 72px;
+    }
+    .research-docket {
+      background:
+        linear-gradient(180deg, rgba(216,207,185,0.075), rgba(216,207,185,0.025)),
+        rgba(16,19,18,0.95);
+    }
+    .line-glyph {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--line-soft);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .tech-cutaway {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(216,207,185,0.055), rgba(216,207,185,0.018)),
+        rgba(8,11,11,0.52);
+      overflow: hidden;
+    }
+    .cutaway-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(9,12,12,0.48);
+    }
+    .cutaway-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--paper);
+    }
+    .cutaway-sub {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--faint);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tech-cutaway-diagram {
+      position: relative;
+      height: 132px;
+      margin: 8px 8px 10px;
+      border: 1px solid rgba(123,166,182,0.24);
+      background:
+        linear-gradient(rgba(123,166,182,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(123,166,182,0.055) 1px, transparent 1px),
+        radial-gradient(75% 85% at 50% 18%, rgba(123,166,182,0.12), transparent 72%),
+        rgba(5,8,8,0.82);
+      background-size: 34px 34px, 34px 34px, auto, auto;
+      overflow: hidden;
+    }
+    .tech-cutaway-diagram::before {
+      content: "";
+      position: absolute;
+      left: 30px;
+      right: 20px;
+      top: 12px;
+      bottom: 12px;
+      border-left: 1px solid rgba(123,166,182,0.28);
+      border-bottom: 1px solid rgba(123,166,182,0.22);
+      transform: skewX(-16deg);
+    }
+    .tech-slice {
+      position: absolute;
+      height: 24px;
+      border: 1px solid rgba(201,154,77,0.42);
+      background:
+        linear-gradient(180deg, rgba(216,207,185,0.16), rgba(92,105,101,0.18)),
+        rgba(21,25,23,0.96);
+      box-shadow:
+        0 5px 0 rgba(5,8,8,0.72),
+        0 0 0 1px rgba(123,166,182,0.12) inset;
+      transform: skewX(-16deg);
+    }
+    .tech-slice:nth-child(even) {
+      border-color: rgba(123,166,182,0.46);
+      background:
+        linear-gradient(180deg, rgba(123,166,182,0.18), rgba(216,207,185,0.06)),
+        rgba(18,24,25,0.96);
+    }
+    .tech-slice::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      width: 18px;
+      border-top: 1px solid rgba(123,166,182,0.34);
+    }
+    .tech-slice-inner {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 0 7px;
+      transform: skewX(16deg);
+    }
+    .tech-slice-index {
+      flex: none;
+      font-size: 9px;
+      font-weight: 900;
+      color: var(--brass);
+    }
+    .tech-slice-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 10px;
+      font-weight: 900;
+      color: var(--paper);
+    }
+    .tech-slice-status {
+      flex: none;
+      margin-left: auto;
+      font-size: 8px;
+      color: var(--steel);
+    }
+    .tech-layer-stack {
+      display: grid;
+      gap: 1px;
+      background: rgba(216,207,185,0.08);
+    }
+    .dependency-layer {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      padding: 10px 11px;
+      background:
+        linear-gradient(90deg, rgba(201,154,77,0.075), transparent 36%),
+        rgba(14,17,16,0.94);
+    }
+    .dependency-layer:nth-child(even) {
+      background:
+        linear-gradient(90deg, rgba(97,119,125,0.08), transparent 38%),
+        rgba(14,17,16,0.94);
+    }
+    .layer-index {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(201,154,77,0.45);
+      color: var(--brass);
+      font-size: 11px;
+      font-weight: 900;
+      background: rgba(201,154,77,0.08);
+    }
+    .layer-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 900;
+      color: var(--paper);
+    }
+    .layer-status {
+      flex: none;
+      font-size: 10px;
+      color: var(--brass);
+      letter-spacing: 0.04em;
+    }
+    .layer-body {
+      margin-top: 4px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .layer-dep {
+      margin-top: 5px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--faint);
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">科技树 · 知识→技能→产能</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="tech-tree.html" class="active">科技树</a>
+        <a href="strategic-map.html">战略态势</a>
+        <a href="senate-roster.html">元老名册</a>
+        <a href="diplomacy.html">外交博弈</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>研究院在编技师 213</span><span class="pill">橙色警戒</span></div>
+      </div>
+    </header>
+
+    <aside class="panel left-rail">
+      <div class="panel-head" style="padding:14px 16px"><div class="eyebrow">科技主线</div><div class="panel-title" style="font-size:18px;margin-top:6px">九条研究路线</div></div>
+      <div class="rail-list" id="railList"></div>
+      <div class="rp-box">
+        <div class="section-title" style="margin-bottom:8px"><span>月产研究点</span><span class="badge cyan">学府成熟</span></div>
+        <div class="rp-row"><div class="rp-big">42<span> RP/月</span></div><div class="hint" style="text-align:right">元老 12 · 技师 213<br>图书馆藏书 +6</div></div>
+      </div>
+    </aside>
+
+    <section class="canvas-wrap research-board blueprint-grid">
+      <div class="canvas-head">
+        <div><h2 id="lineTitle">冶金与材料线</h2><div class="lead" id="lineLead">主导方向：冶金 / 材料 / 化学</div></div>
+        <div class="badge steel" id="lineProgress">已解锁 4 / 8</div>
+      </div>
+      <div class="tree" id="tree"><svg id="edges"></svg></div>
+    </section>
+
+    <aside class="panel detail">
+      <div class="panel-head">
+        <div class="eyebrow" id="dState">研究节点</div>
+        <div class="panel-title" id="dName">平炉炼钢</div>
+        <div class="panel-meta" id="dPrereq">前置：贝塞麦转炉</div>
+      </div>
+      <div class="detail-body">
+        <dl class="kv">
+          <dt>研究成本</dt><dd id="dCost">300 RP</dd>
+          <dt>当前状态</dt><dd id="dStatus">可研究</dd>
+          <dt>扩散风险</dt><dd id="dRisk"><span class="badge high">高</span></dd>
+        </dl>
+        <div class="section-title" style="margin-top:6px"><span>解锁效果</span></div>
+        <div class="effect-card" id="dEffect">大规模低成本钢材，铁路建设可行。</div>
+        <div class="section-title" style="margin:18px 0 8px"><span>扩散管控提示</span></div>
+        <p class="hint" id="dWarn">高扩散风险技术。掌握此技术的归化民技师须签署保密协议，政保局每季度进行接触外部势力审查。</p>
+        <section class="tech-cutaway" aria-label="技术对象剖面">
+          <div class="cutaway-head">
+            <div>
+              <div class="cutaway-title" id="cutawayTitle">技术对象剖面</div>
+              <div class="cutaway-sub" id="cutawaySub">展开该节点成立所需的技术、工艺、组织与管控依赖。</div>
+            </div>
+            <span class="badge steel" id="cutawayCount">0 层</span>
+          </div>
+          <div class="tech-cutaway-diagram" id="techCutawayDiagram"></div>
+          <div class="tech-layer-stack" id="techLayerStack"></div>
+        </section>
+      </div>
+      <div style="padding:14px 18px;border-top:1px solid var(--line);background:rgba(6,10,11,0.32);display:grid;grid-template-columns:1fr auto;gap:10px">
+        <button class="cmd primary" id="dAction">投入研究（300 RP）</button>
+        <button class="cmd" title="加入研究队列">排队</button>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <div class="legend">
+          <span><i style="background:var(--green)"></i>已解锁</span>
+          <span><i style="background:var(--amber)"></i>研究中</span>
+          <span><i style="background:var(--steel)"></i>可研究</span>
+          <span><i style="background:var(--faint)"></i>前置未达</span>
+        </div>
+        <div class="hint" style="margin-left:24px">第44章里程碑提示：RP 节点解锁「技术可行」，仍需投入资源完成工程建造方可量产装备。</div>
+      </div>
+      <div class="bottom-group right">
+        <span class="hint"><span class="kbd">R</span> 研究界面 · <span class="kbd">Esc</span> 关闭</span>
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // 数据取自《旅顺口游戏设定文档》第27章科技树
+    const LINES = {
+      metal: { name: "冶金与材料线", dir: "冶金 / 材料 / 化学", glyph: "冶", nodes: [
+        { id: "iron",   nm: "基础铸铁",   tier: 0, pre: [],            cost: "已解锁", risk: "low",    st: "done",   ef: "高炉运行。" },
+        { id: "coke",   nm: "焦炭冶炼",   tier: 1, pre: ["iron"],      cost: "已解锁", risk: "low",    st: "done",   ef: "焦炭炉、炼铁效率 +30%。" },
+        { id: "fire",   nm: "耐火砖量产", tier: 2, pre: ["coke"],      cost: "80 RP",  risk: "low",    st: "done",   ef: "高炉寿命 ×2，维修成本 −40%。" },
+        { id: "std",    nm: "铸铁炮标准化", tier: 1, pre: ["iron"],    cost: "60 RP",  risk: "mid",    st: "done",   ef: "炮口径统一，弹药通用化，后勤简化。" },
+        { id: "bess",   nm: "贝塞麦转炉", tier: 2, pre: ["coke"],      cost: "150 RP", risk: "high",   st: "active", ef: "炮钢、船板钢。清朝若得此技术，10 年内武器升级。" },
+        { id: "open",   nm: "平炉炼钢",   tier: 3, pre: ["bess"],      cost: "300 RP", risk: "high",   st: "avail",  ef: "大规模低成本钢材，铁路建设可行。" },
+        { id: "scannon",nm: "钢炮制造",   tier: 3, pre: ["bess"],      cost: "120 RP", risk: "high",   st: "avail",  ef: "解锁 12 磅以上钢炮，穿甲能力 +50%。" },
+        { id: "rifle",  nm: "线膛炮技术", tier: 4, pre: ["scannon"],   cost: "400 RP", risk: "severe", st: "locked", ef: "射程 ×1.8，精度 ×3，对要塞攻击能力质变。" },
+      ]},
+      steam: { name: "蒸汽与机械线", dir: "机械 / 工程", glyph: "机", nodes: [
+        { id: "lp",   nm: "低压蒸汽机", tier: 0, pre: [],        cost: "已解锁", risk: "mid",    st: "done",   ef: "铁山基础动力。" },
+        { id: "loc",  nm: "蒸汽机本地化", tier: 1, pre: ["lp"],  cost: "150 RP", risk: "low",    st: "done",   ef: "零件本地制造率 70%，临高依赖 −40%。" },
+        { id: "crane",nm: "蒸汽起重机", tier: 1, pre: ["lp"],    cost: "100 RP", risk: "low",    st: "done",   ef: "港口装卸效率 ×3，大型炮台建设 −40%。" },
+        { id: "hp",   nm: "高压蒸汽机", tier: 2, pre: ["loc"],   cost: "200 RP", risk: "high",   st: "active", ef: "功率 +60%，同体积燃料产出更高。" },
+        { id: "ship", nm: "蒸汽船推进", tier: 1, pre: ["lp"],    cost: "180 RP", risk: "high",   st: "avail",  ef: "解锁纯蒸汽舰船建造，不再依赖风帆。" },
+        { id: "part", nm: "标准零件体系", tier: 2, pre: ["loc"], cost: "200 RP", risk: "low",    st: "avail",  ef: "维修时间 −50%，备件成本 −30%。" },
+        { id: "comp", nm: "复合蒸汽机", tier: 3, pre: ["hp"],    cost: "350 RP", risk: "high",   st: "locked", ef: "燃料消耗 −30%，航程大幅延长。" },
+        { id: "dig",  nm: "蒸汽挖掘机原型", tier: 3, pre: ["hp"],cost: "300 RP", risk: "mid",    st: "locked", ef: "要塞与运河建设速度 ×2。" },
+        { id: "prop", nm: "螺旋桨推进", tier: 2, pre: ["ship"],  cost: "400 RP", risk: "severe", st: "locked", ef: "航速 +40%，逆风机动能力质变。" },
+      ]},
+      weapon: { name: "武器与军工线", dir: "军工 / 化学 / 机械", glyph: "军", nodes: [
+        { id: "bp",   nm: "黑火药标准化", tier: 0, pre: [],        cost: "已解锁", risk: "low",    st: "done",   ef: "配方稳定，日产量 +20%。",
+          cutawayTitle: "黑火药标准化 · 火药工坊剖面",
+          cutawaySub: "将配方经验转化为批次规程：原料、配比、工序、检验、包装、军用分级与泄密管控必须同时成立。",
+          cutaway: [
+            { title: "原料层", status: "供应", body: "硝石、硫磺、木炭分仓入库；硝石需再结晶纯化，木炭限定柳木与榆木批次。", dep: "依赖：硝石作坊、硫磺贸易、炭窑与含水率记录。" },
+            { title: "配方层", status: "比例", body: "按火枪药、炮药、地雷药建立不同硝硫炭比例，严禁凭师傅手感临场调配。", dep: "依赖：量具校准、配方牌、批次号与湿混记录。" },
+            { title: "工艺层", status: "车间", body: "研磨、筛分、压饼、造粒、干燥、防潮分段执行，危险工序隔墙分室。", dep: "依赖：水力碾、铜筛、干燥房、防静电木履与禁火规程。" },
+            { title: "检验层", status: "试爆", body: "每批抽样做燃速、残渣、湿度与炮膛压力测试，结果写入火药牌簿。", dep: "依赖：试爆场、标准药杯、炮膛压力记录与退批制度。" },
+            { title: "包装运输层", status: "仓储", body: "火药桶内衬油纸，封蜡编号；按仓储湿度、转运路线和护送等级分库。", dep: "依赖：桶匠、封蜡、湿度牌、禁铁器搬运与押运签收。" },
+            { title: "军事应用层", status: "分级", body: "火枪药、炮药、地雷药、信号药按颗粒度与燃速分级，前线不得混用。", dep: "依赖：军械处口径表、弹药库分格、炮兵训练与事故追责。" },
+            { title: "扩散管控层", status: "保密", body: "掌握完整流程的技师分段管理，任何单人不得同时掌握配方、检验和仓储全链。", dep: "依赖：政保局名单、技师轮岗、出港审查与泄露后复制时间评估。" },
+          ] },
+        { id: "mine", nm: "米尼步枪改良", tier: 0, pre: [],        cost: "已解锁", risk: "high",   st: "done",   ef: "精度 +30%，装填时间 −20%。" },
+        { id: "mortar",nm:"臼炮改良",     tier: 1, pre: ["bp"],     cost: "100 RP", risk: "mid",    st: "done",   ef: "曲射精度 +40%，弹道更稳定。" },
+        { id: "land", nm: "地雷标准化",   tier: 1, pre: ["bp"],     cost: "80 RP",  risk: "mid",    st: "active", ef: "防御阵地布设效率 ×2，单位成本 −30%。" },
+        { id: "picr", nm: "苦味酸炸药量产", tier: 2, pre: ["bp"],   cost: "300 RP", risk: "high",   st: "avail",  ef: "爆破能力 ×4，工程爆破效率 ×3。" },
+        { id: "mtr2", nm: "迫击炮原型",   tier: 2, pre: ["mortar"], cost: "200 RP", risk: "high",   st: "avail",  ef: "步兵自携曲射火力，攻坚能力大幅提升。" },
+        { id: "breech",nm:"后装步枪原型", tier: 1, pre: ["mine"],   cost: "500 RP", risk: "severe", st: "avail",  ef: "射速 ×3，射手生存率大幅提升。" },
+        { id: "water",nm: "水雷试验",     tier: 3, pre: ["land","picr"], cost: "200 RP", risk: "high", st: "locked", ef: "港口防御新层级，对敌舰杀伤力质变。" },
+        { id: "smoke",nm: "无烟火药",     tier: 3, pre: ["picr"],   cost: "600 RP", risk: "severe", st: "locked", ef: "枪炮射程 ×1.5，暴露位置减少（无烟雾）。" },
+      ]},
+      chem: { name: "化工与医药线", dir: "化学 / 医学", glyph: "化", nodes: [
+        { id: "acid", nm: "基础酸碱制造", tier: 0, pre: [],         cost: "已解锁", risk: "low", st: "done",  ef: "硫酸 / 盐酸 / 烧碱基础生产。" },
+        { id: "h2so4",nm: "硫酸量产",     tier: 1, pre: ["acid"],   cost: "80 RP",  risk: "mid", st: "done",  ef: "化肥（过磷酸钙）可用，农业产量 +15%。" },
+        { id: "alc",  nm: "消毒酒精标准化", tier: 1, pre: ["acid"], cost: "60 RP",  risk: "low", st: "done",  ef: "感染死亡率 −40%，手术成功率 +30%。" },
+        { id: "sulfa",nm: "磺胺提纯",     tier: 2, pre: ["alc"],    cost: "150 RP", risk: "mid", st: "active",ef: "外伤感染死亡率 −60%，战斗力保留率 +15%。" },
+        { id: "lube", nm: "润滑油精制",   tier: 1, pre: ["acid"],   cost: "120 RP", risk: "low", st: "avail", ef: "蒸汽机大修周期 ×2，机床寿命 +40%。" },
+        { id: "pen",  nm: "青霉素稳定生产", tier: 3, pre: ["sulfa"],cost: "400 RP", risk: "severe", st: "locked", ef: "疫情致死率 −70%，危机 E1 严重程度大幅下降。" },
+        { id: "shale",nm: "页岩油分馏",   tier: 2, pre: ["lube"],   cost: "300 RP", risk: "mid", st: "locked",ef: "工业润滑油自给，煤油灯照明全面替代。" },
+        { id: "fuel", nm: "轻质燃油",     tier: 3, pre: ["shale"],  cost: "500 RP", risk: "severe", st: "locked", ef: "内燃机原型研发可行，未来机动化前置。" },
+      ]},
+      build: { name: "建筑与工程线", dir: "土木 / 工程", glyph: "工", nodes: [
+        { id: "cem",  nm: "硅酸盐水泥",   tier: 0, pre: [],         cost: "已解锁", risk: "low", st: "done",  ef: "棱堡建造，基础建设速度 +30%。" },
+        { id: "narrow",nm:"窄轨铁路",     tier: 0, pre: [],         cost: "已解锁", risk: "mid", st: "done",  ef: "铁山—旅顺运力，补给效率 +60%。" },
+        { id: "hcon", nm: "高强混凝土",   tier: 1, pre: ["cem"],    cost: "100 RP", risk: "low", st: "done",  ef: "要塞抗炮击能力 ×1.5。" },
+        { id: "sewer",nm: "城市排污系统", tier: 1, pre: ["cem"],    cost: "150 RP", risk: "low", st: "active",ef: "流行病触发概率 −30%，居民满意度 +10。" },
+        { id: "rebar",nm: "钢筋混凝土",   tier: 2, pre: ["hcon"],   cost: "250 RP", risk: "low", st: "avail", ef: "建筑高度解锁 5 层以上，防御工事抗炸能力质变。" },
+        { id: "water2",nm:"自来水系统",   tier: 2, pre: ["sewer"],  cost: "300 RP", risk: "low", st: "avail", ef: "城区消防 +，居民满意度 +15，疫情 −40%。" },
+        { id: "std2", nm: "标准轨铁路",   tier: 1, pre: ["narrow"], cost: "400 RP", risk: "high",st: "locked",ef: "大运力陆上补给，战略机动能力质变。" },
+        { id: "heat", nm: "暖气管网",     tier: 3, pre: ["water2"], cost: "350 RP", risk: "low", st: "locked",ef: "冬季冻伤率 −60%，工人区满意度 +20，寒冷减员 −50%。" },
+      ]},
+      ship: { name: "造船与航海线", dir: "造船 / 机械 / 航海", glyph: "船", nodes: [
+        { id: "hull", nm: "木壳铁肋船",   tier: 0, pre: [],         cost: "已解锁", risk: "mid", st: "done",  ef: "建造 2000 吨级蒸汽战舰。" },
+        { id: "nav",  nm: "精密航海仪器", tier: 1, pre: ["hull"],   cost: "200 RP", risk: "low", st: "done",  ef: "夜航 / 雾航能力，航线开辟速度 ×2。" },
+        { id: "mount",nm: "船用旋转炮座", tier: 1, pre: ["hull"],   cost: "200 RP", risk: "high",st: "active",ef: "侧舷炮换为中轴炮，火力覆盖角 ×3。" },
+        { id: "fullhull",nm:"全铁船壳",   tier: 2, pre: ["hull"],   cost: "300 RP", risk: "high",st: "avail", ef: "排水量 ×1.5，抗炮击能力 ×2。" },
+        { id: "turret",nm:"旋转炮塔原型", tier: 3, pre: ["mount","fullhull"], cost: "500 RP", risk: "severe", st: "locked", ef: "装甲舰标志性技术，对木船绝对压制。" },
+      ]},
+      agri: { name: "农业与食品线", dir: "农业 / 生物 / 食品", glyph: "农", nodes: [
+        { id: "cold", nm: "耐寒品种选育", tier: 0, pre: [],         cost: "已解锁", risk: "low", st: "done",  ef: "辽东主粮产量 +20%。" },
+        { id: "green",nm: "温室育苗技术", tier: 0, pre: [],         cost: "已解锁", risk: "low", st: "done",  ef: "马铃薯脱毒种薯繁育，病害 −60%。" },
+        { id: "can",  nm: "罐头工艺",     tier: 0, pre: [],         cost: "已解锁", risk: "mid", st: "done",  ef: "肉类 / 海产保质期 180 天。" },
+        { id: "early",nm: "早熟高产品种", tier: 1, pre: ["cold"],   cost: "150 RP", risk: "low", st: "active",ef: "生长期缩短 20 天，复种可能性出现。" },
+        { id: "fert", nm: "化肥应用",     tier: 1, pre: ["cold"],   cost: "100 RP", risk: "low", st: "avail", ef: "粮食亩产 +25%（需硫酸量产）。" },
+        { id: "seed", nm: "工厂化育苗",   tier: 1, pre: ["green"],  cost: "200 RP", risk: "low", st: "avail", ef: "育苗效率 ×5，移栽存活率 +30%。" },
+        { id: "auto", nm: "高压灭菌",     tier: 1, pre: ["can"],    cost: "150 RP", risk: "mid", st: "avail", ef: "保质期延长至 3 年，军粮储备效率 ×2。" },
+        { id: "biogas",nm:"沼气工程化",   tier: 2, pre: ["auto"],   cost: "200 RP", risk: "low", st: "locked",ef: "大型畜牧场热能自给，煤炭消耗 −8%。" },
+      ]},
+      comm: { name: "通信与情报线", dir: "电气 / 通信 / 情报", glyph: "报", nodes: [
+        { id: "wire", nm: "有线电报",     tier: 0, pre: [],         cost: "已解锁", risk: "mid", st: "done",  ef: "辖区内通信，响应时间 < 2 小时。" },
+        { id: "photo",nm: "照相术",       tier: 0, pre: [],         cost: "200 RP", risk: "low", st: "done",  ef: "证件照 + 地图测绘 + 人员档案精确化。" },
+        { id: "code", nm: "密码机",       tier: 1, pre: ["wire"],   cost: "200 RP", risk: "high",st: "active",ef: "情报泄露风险 −50%，通信安全性大幅提升。" },
+        { id: "survey",nm:"地图摄影测绘", tier: 1, pre: ["photo"],  cost: "300 RP", risk: "mid", st: "avail", ef: "辽东地形图精度大幅提升，军事规划质量大增。" },
+        { id: "radio",nm: "无线电报原型", tier: 2, pre: ["wire"],   cost: "400 RP", risk: "severe", st: "locked", ef: "与舰队海上实时通信，情报时效性质变。" },
+      ]},
+    };
+
+    const RISK_LABEL = { low: "低", mid: "中", high: "高", severe: "极高" };
+    const ST_LABEL = { done: "已解锁", active: "研究中", avail: "可研究", locked: "前置未达" };
+    function initialSelection() {
+      const raw = decodeURIComponent(location.hash.replace(/^#/, ""));
+      const [line, node] = raw.split("/");
+      if (LINES[line] && LINES[line].nodes.some(n => n.id === node)) return [line, node];
+      return ["metal", "open"];
+    }
+
+    let [curLine, curNode] = initialSelection();
+
+    const railList = document.getElementById("railList");
+    Object.entries(LINES).forEach(([key, ln]) => {
+      const done = ln.nodes.filter(n => n.st === "done").length;
+      const b = document.createElement("button");
+      b.className = "line-btn"; b.dataset.line = key;
+      b.setAttribute("aria-pressed", key === curLine);
+      b.innerHTML = `<span class="line-glyph">${ln.glyph}</span>
+        <span><span class="line-name">${ln.name}</span><div class="line-sub">${ln.dir}</div></span>
+        <span class="line-count">${done}/${ln.nodes.length}</span>`;
+      b.addEventListener("click", () => { curLine = key; const f = LINES[key].nodes.find(n=>n.st!=="done")||LINES[key].nodes[0]; renderLine(); selectNode(f.id); });
+      railList.appendChild(b);
+    });
+
+    function renderLine() {
+      const ln = LINES[curLine];
+      document.querySelectorAll(".line-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.line === curLine));
+      document.getElementById("lineTitle").textContent = ln.name;
+      document.getElementById("lineLead").textContent = "主导方向：" + ln.dir;
+      const done = ln.nodes.filter(n => n.st === "done").length;
+      document.getElementById("lineProgress").textContent = `已解锁 ${done} / ${ln.nodes.length}`;
+
+      const tree = document.getElementById("tree");
+      tree.querySelectorAll(".node").forEach(n => n.remove());
+      const tiers = {};
+      ln.nodes.forEach(n => { (tiers[n.tier] ||= []).push(n); });
+      const colW = 188, rowH = 96, padX = 28, padY = 64;
+      const pos = {};
+      Object.entries(tiers).forEach(([t, arr]) => {
+        arr.forEach((n, i) => { pos[n.id] = { x: padX + t * colW, y: padY + i * rowH + (t % 2) * 28 }; });
+      });
+      const maxRows = Math.max(...Object.values(tiers).map(a => a.length));
+      tree.style.minHeight = (padY + maxRows * rowH + 40) + "px";
+      tree.style.minWidth = (padX + (Math.max(...ln.nodes.map(n=>n.tier)) + 1) * colW + 20) + "px";
+
+      ln.nodes.forEach(n => {
+        const el = document.createElement("button");
+        el.className = "node research-docket " + n.st; el.dataset.node = n.id;
+        el.style.left = pos[n.id].x + "px"; el.style.top = pos[n.id].y + "px";
+        el.setAttribute("aria-pressed", n.id === curNode);
+        el.innerHTML = `<div class="nm">${n.nm}</div><div class="ce"><span class="dot"></span>${n.cost} · 扩散${RISK_LABEL[n.risk]}</div>`;
+        el.addEventListener("click", () => selectNode(n.id));
+        tree.appendChild(el);
+      });
+
+      const svg = document.getElementById("edges");
+      svg.setAttribute("viewBox", `0 0 ${tree.scrollWidth} ${tree.scrollHeight}`);
+      let paths = "";
+      ln.nodes.forEach(n => n.pre.forEach(p => {
+        if (!pos[p]) return;
+        const a = pos[p], b = pos[n.id];
+        const x1 = a.x + 150, y1 = a.y, x2 = b.x, y2 = b.y, mx = (x1 + x2) / 2;
+        const cls = (LINES[curLine].nodes.find(x=>x.id===p).st === "done" && n.st !== "locked") ? "edge done" : "edge";
+        paths += `<path class="${cls}" d="M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`;
+      }));
+      svg.innerHTML = paths;
+    }
+
+    function selectNode(id) {
+      curNode = id;
+      const n = LINES[curLine].nodes.find(x => x.id === id);
+      document.querySelectorAll(".node").forEach(e => e.setAttribute("aria-pressed", e.dataset.node === id));
+      document.getElementById("dState").textContent = "研究节点 · " + LINES[curLine].name;
+      document.getElementById("dName").textContent = n.nm;
+      const preNames = n.pre.length ? n.pre.map(p => LINES[curLine].nodes.find(x=>x.id===p).nm).join(" + ") : "无（基础节点）";
+      document.getElementById("dPrereq").textContent = "前置：" + preNames;
+      document.getElementById("dCost").textContent = n.cost;
+      document.getElementById("dStatus").textContent = ST_LABEL[n.st];
+      document.getElementById("dRisk").innerHTML = `<span class="badge ${n.risk}">${RISK_LABEL[n.risk]}</span>`;
+      document.getElementById("dEffect").textContent = n.ef;
+      const warnByRisk = {
+        low: "低扩散风险。即便产品出口，敌对势力也难以在短期内逆向掌握。",
+        mid: "中等扩散风险。出口含此技术的产品时建议经中间商，掩盖来源。",
+        high: "高扩散风险技术。掌握此技术的归化民技师须签署保密协议，政保局每季度审查其对外接触。",
+        severe: "极高扩散风险。一旦技师携知识出逃或被俘，敌方解锁时间缩短 50%，需立即启动技术压制计划。"
+      };
+      document.getElementById("dWarn").textContent = warnByRisk[n.risk];
+      renderCutaway(n);
+      const act = document.getElementById("dAction");
+      if (n.st === "done") { act.textContent = "已解锁"; act.disabled = true; act.classList.remove("primary"); }
+      else if (n.st === "active") { act.textContent = "研究中…（进度 58%）"; act.disabled = true; act.classList.remove("primary"); act.classList.add("steel"); }
+      else if (n.st === "locked") { act.textContent = "前置未达成"; act.disabled = true; act.classList.remove("primary"); }
+      else { act.textContent = "投入研究（" + n.cost + "）"; act.disabled = false; act.classList.add("primary"); act.classList.remove("steel"); }
+    }
+
+    function fallbackCutaway(n) {
+      return {
+        title: n.nm + " · 技术对象剖面",
+        sub: "该节点尚未建立专属工程图，使用通用研发依赖框架展示。",
+        layers: [
+          { title: "知识来源层", status: "文献", body: "整理元老记忆、旧时空教材和现场经验，形成可教学的技术说明。", dep: "依赖：图书馆、口述记录、术语统一。" },
+          { title: "材料与设备层", status: "物料", body: "确认本地可获得的材料、工具和基础设备，找出仍需临高输入的短板。", dep: "依赖：仓储清单、铁山工坊、进口件台账。" },
+          { title: "工艺试验层", status: "试制", body: "将原理拆成可重复的工序，并用小批量试制验证稳定性。", dep: "依赖：试验场、技师班、失败记录。" },
+          { title: "量产转化层", status: "建造", body: "把技术可行转成工厂、规程、培训和维修体系，进入城市经营层。", dep: "依赖：工程预算、岗位培训、维修备件。" },
+          { title: "扩散管控层", status: "保密", body: "按扩散风险决定保密等级、技师接触范围和出口限制。", dep: "依赖：政保审查、出口清单、反泄密预案。" },
+        ]
+      };
+    }
+
+    function renderCutaway(n) {
+      const custom = n.cutaway ? {
+        title: n.cutawayTitle || (n.nm + " · 技术对象剖面"),
+        sub: n.cutawaySub || "展开该节点成立所需的依赖层。",
+        layers: n.cutaway
+      } : fallbackCutaway(n);
+      document.getElementById("cutawayTitle").textContent = custom.title;
+      document.getElementById("cutawaySub").textContent = custom.sub;
+      document.getElementById("cutawayCount").textContent = custom.layers.length + " 层";
+      const diagram = document.getElementById("techCutawayDiagram");
+      diagram.style.height = Math.max(112, 34 + custom.layers.length * 14) + "px";
+      diagram.innerHTML = custom.layers.map((layer, i) => `
+        <div class="tech-slice" style="top:${10 + i * 14}px;left:${12 + i * 2}px;right:${14 + Math.max(0, 6 - i) * 2}px">
+          <div class="tech-slice-inner">
+            <span class="tech-slice-index">${String(i + 1).padStart(2, "0")}</span>
+            <span class="tech-slice-title">${layer.title}</span>
+            <span class="tech-slice-status">${layer.status}</span>
+          </div>
+        </div>
+      `).join("");
+      document.getElementById("techLayerStack").innerHTML = custom.layers.map((layer, i) => `
+        <article class="dependency-layer">
+          <div class="layer-index">${String(i + 1).padStart(2, "0")}</div>
+          <div>
+            <div class="layer-title"><span>${layer.title}</span><span class="layer-status">${layer.status}</span></div>
+            <div class="layer-body">${layer.body}</div>
+            <div class="layer-dep">${layer.dep}</div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    renderLine(); selectNode(curNode);
+  </script>
+</body>
+</html>

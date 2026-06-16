@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 元老名册与命运</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    .roster { top: 92px; left: 20px; width: 290px; bottom: 92px; display: grid; grid-template-rows: auto auto 1fr; min-height: 0; }
+    .fac-strip { display: flex; gap: 1px; padding: 0; background: var(--line); border-bottom: 1px solid var(--line); }
+    .fac { flex: 1; padding: 8px 4px; text-align: center; background: rgba(19,25,28,0.9); font-size: 11px; font-weight: 800; color: var(--muted); }
+    .fac i { display: block; width: 100%; height: 3px; margin-top: 5px; }
+    .elder-list { overflow: auto; }
+    .elder {
+      display: grid; grid-template-columns: 42px 1fr auto; gap: 11px; align-items: center;
+      padding: 11px 14px; border-bottom: 1px solid var(--line-soft); cursor: pointer;
+    }
+    .elder:hover { background: rgba(244,239,225,0.04); }
+    .elder[aria-pressed="true"] { background: rgba(213,155,66,0.12); box-shadow: inset 3px 0 0 var(--amber); }
+    .ava { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line); font-weight: 900; font-size: 17px; background: rgba(244,239,225,0.06); }
+    .elder-nm { font-size: 14px; font-weight: 800; }
+    .elder-sub { font-size: 11px; color: var(--faint); margin-top: 3px; }
+    .hp-chip { font-size: 11px; font-weight: 800; padding: 2px 7px; border: 1px solid var(--line); }
+
+    .dossier { position: absolute; top: 92px; left: 326px; right: 372px; bottom: 92px; border: 1px solid var(--line); background: var(--panel); overflow: auto; z-index: 4; box-shadow: 0 16px 36px var(--shadow); }
+    .dos-head { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 20px 22px; border-bottom: 1px solid var(--line); background: rgba(6,10,11,0.4); }
+    .ava-lg { width: 64px; height: 64px; display: grid; place-items: center; border: 2px solid var(--amber); font-weight: 900; font-size: 26px; background: rgba(213,155,66,0.14); color: var(--amber); }
+    .dos-name { font-size: 26px; font-weight: 900; }
+    .dos-meta { margin-top: 5px; font-size: 13px; color: var(--muted); }
+    .dos-grid { display: grid; grid-template-columns: 280px 1fr; gap: 0; }
+    .radar-box { padding: 20px; border-right: 1px solid var(--line); }
+    .radar-box svg { width: 100%; height: auto; }
+    .attr-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 14px; font-size: 12px; }
+    .attr-legend span { display: flex; justify-content: space-between; color: var(--muted); }
+    .attr-legend b { color: var(--ink); }
+    .right-col { padding: 18px 20px; }
+    .hpbar-wrap { margin: 6px 0 18px; }
+    .specs { display: grid; gap: 10px; }
+    .spec { display: grid; grid-template-columns: 92px 1fr 40px; gap: 12px; align-items: center; font-size: 12px; }
+    .spec-name { color: var(--muted); font-weight: 700; }
+    .pips { display: flex; gap: 4px; }
+    .pip { width: 100%; height: 9px; background: rgba(255,255,255,0.1); }
+    .pip.on { background: var(--steel); }
+    .pip.on.gold { background: var(--amber); }
+    .age-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 16px 0; }
+
+    .side { top: 92px; right: 20px; width: 336px; bottom: 92px; display: grid; grid-template-rows: 1fr 1fr; min-height: 0; }
+    .side-sec { overflow: auto; padding: 14px 16px; }
+    .side-sec + .side-sec { border-top: 1px solid var(--line); }
+    .fate { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+    .fate-ic { font-size: 16px; }
+    .fate-t { font-size: 13px; font-weight: 800; }
+    .fate-b { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+    .rel { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 12px; }
+    .rel-name { font-weight: 700; }
+    .rel-val { font-weight: 800; }
+    .dossier-table {
+      background:
+        linear-gradient(90deg, rgba(216,207,185,0.035), transparent 18%, transparent 82%, rgba(216,207,185,0.025)),
+        rgba(16,19,18,0.9);
+    }
+    .archive-ledger .dos-head {
+      background:
+        linear-gradient(180deg, rgba(47,39,27,0.26), rgba(10,12,12,0.48));
+    }
+    .seal-strip .fac {
+      background: rgba(13,16,15,0.9);
+      color: var(--paper-dim);
+    }
+    .fate-ic {
+      border: 1px solid var(--line-soft);
+      background: rgba(216,207,185,0.055);
+      color: var(--brass);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">元老名册 · 个人成长与命运</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="tech-tree.html">科技树</a>
+        <a href="strategic-map.html">战略态势</a>
+        <a href="senate-roster.html" class="active">元老名册</a>
+        <a href="diplomacy.html">外交博弈</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>驻节元老 12 / 45</span><span class="pill">橙色警戒</span></div>
+      </div>
+    </header>
+
+    <aside class="panel roster">
+      <div class="panel-head" style="padding:13px 16px"><div class="eyebrow">驻节元老名册</div><div class="panel-title" style="font-size:18px;margin-top:6px">辽南军政委员会</div></div>
+      <div class="fac-strip seal-strip">
+        <div class="fac">铁鹰派<i style="background:var(--red)"></i></div>
+        <div class="fac">铁炉派<i style="background:var(--amber)"></i></div>
+        <div class="fac">临高路线派<i style="background:var(--steel)"></i></div>
+        <div class="fac">辽南本位派<i style="background:var(--green)"></i></div>
+      </div>
+      <div class="elder-list" id="elderList"></div>
+    </aside>
+
+    <section class="dossier dossier-table archive-ledger">
+      <div class="dos-head">
+        <div class="ava-lg" id="dAva">朱</div>
+        <div>
+          <div class="dos-name" id="dName">朱鸣夏</div>
+          <div class="dos-meta" id="dMeta">铁鹰派领袖 · 军事委员会 · 38 岁</div>
+        </div>
+        <div style="text-align:right">
+          <div class="hp-chip" id="dHpChip">健旺 86</div>
+          <div class="hint" style="margin-top:6px" id="dStanceNote">主张快速军事扩张</div>
+        </div>
+      </div>
+      <div class="dos-grid">
+        <div class="radar-box">
+          <div class="section-title" style="margin-bottom:10px"><span>六维属性</span><span class="hint" id="dCap">上限 15</span></div>
+          <svg viewBox="0 0 220 220" id="radar"></svg>
+          <div class="attr-legend" id="attrLegend"></div>
+        </div>
+        <div class="right-col">
+          <div class="section-title"><span>健康状态 HP</span><span id="dHpState">健旺</span></div>
+          <div class="hpbar-wrap"><div class="bar green" style="height:10px"><span id="dHpBar" style="width:86%"></span></div></div>
+          <p class="hint" id="dHpNote" style="margin-top:-10px">80–100 健旺：无惩罚；每年 +1 最高属性。HP +3/季度，冬季额外 +1。</p>
+
+          <div class="age-row">
+            <div class="stat"><div class="stat-label">年龄</div><div class="stat-value" id="dAge">38</div><div class="stat-note" id="dAgeNote">20–39 岁：无自然衰减</div></div>
+            <div class="stat"><div class="stat-label">人际羁绊</div><div class="stat-value" id="dBond">4</div><div class="stat-note">挚友 / 战友 / 嫌隙</div></div>
+            <div class="stat"><div class="stat-label">本年专长点</div><div class="stat-value" id="dPt">1</div><div class="stat-note">不可退还的人生选择</div></div>
+          </div>
+
+          <div class="section-title" style="margin:6px 0 12px"><span>专长树 · 五条路线</span><span class="hint">派系亲和</span></div>
+          <div class="specs" id="specs"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel side">
+      <div class="side-sec">
+        <div class="section-title" style="margin-bottom:10px"><span>命运事件 · 履历</span><span class="badge mid" id="fateTag">本年</span></div>
+        <div id="fateList"></div>
+      </div>
+      <div class="side-sec">
+        <div class="section-title" style="margin-bottom:8px"><span>人际关系网络</span><span class="hint">−50 ~ +50</span></div>
+        <div id="relList"></div>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <div class="hint">衰老机制：40 岁后体魄 −1/3 年；55 岁可「传道」将专长点传授给归化民后继者；60 岁以上 INT/WIL 可突破至 18，但行政力上限 −2。元老不是功能模块，而是有年龄、有执念、有死亡的人。</div>
+      </div>
+      <div class="bottom-group right">
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // 角色取自《人物小传》与设定文档第46/47章；属性为设定示例
+    const ATTRS = ["体魄PHY","智识INT","意志WIL","魅力CHA","专注FOC","警觉VIG"];
+    const FAC_COLOR = { "铁鹰派":"var(--red)", "铁炉派":"var(--amber)", "临高路线派":"var(--steel)", "辽南本位派":"var(--green)" };
+    const ROUTES = ["军事指挥","工业管理","外交斡旋","行政治理","科技研究"];
+
+    const ELDERS = [
+      { nm:"朱鸣夏", fac:"铁鹰派", role:"军事委员会", age:38, hp:86, stance:"主张快速军事扩张，尽早北伐",
+        a:[12,9,11,8,10,9], spec:[5,1,0,1,2], bond:4, pt:1,
+        fates:[ ["军","铁鹰密议","派系张力高企；政保局监测到异常军官往来，需防越权行动。"],
+                ["名","不败将名（Lv5）","主导战役失败后士气惩罚减半，归化民军事招募上限 +100。"] ],
+        rel:[ ["林深河","铁炉派",-22], ["林剑行","铁鹰派",34], ["明朗","辽南本位派",-8], ["安楠","临高路线派",6] ] },
+
+      { nm:"林深河", fac:"铁炉派", role:"铁山工业区主管", age:45, hp:72, stance:"工业立本，先建成完整工业飞地再谈扩张",
+        a:[10,12,12,7,13,8], spec:[0,5,0,2,3], bond:5, pt:1,
+        fates:[ ["工","铁山之魂（Lv5）","铁山整体产值永久 +10%；本人死亡触发『铁山哀悼』特殊事件。"],
+                ["悟","中年顿悟","45 岁段，30% 概率某年专长点 +1。" ] ],
+        rel:[ ["朱鸣夏","铁鹰派",-22], ["易冉武","铁炉派",28], ["赵大全","—",15], ["邓敏","辽南本位派",-12] ] },
+
+      { nm:"安楠", fac:"临高路线派", role:"对外情报局 · 外事", age:34, hp:90, stance:"与临高本部保持同步，旅顺服务全国战略",
+        a:[9,13,10,12,9,13], spec:[0,0,3,1,2], bond:3, pt:1,
+        fates:[ ["信","与家眷通信","收到临高消息：WIL +2，HP +5。"],
+                ["语","语言习得（Lv1）","额外掌握满语，北方谈判 +5。" ] ],
+        rel:[ ["朱鸣夏","铁鹰派",6], ["明朗","辽南本位派",12], ["林剑行","铁鹰派",-15], ["易冉武","铁炉派",4] ] },
+
+      { nm:"邓敏", fac:"辽南本位派", role:"档案 · 死亡编号 · 责任追溯", age:41, hp:64, stance:"重视归化民福利，反对『用完即弃』式动员",
+        a:[8,12,11,9,14,11], spec:[0,1,0,4,2], bond:2, pt:1,
+        fates:[ ["民","民情感知（Lv2）","每季度获归化民民情报告，提前 2 月预警满意度危机。"],
+                ["警","独走嫌疑","私下发展基层组织雏形，处于政保局严密监控下。" ] ],
+        rel:[ ["明朗","辽南本位派",30], ["林深河","铁炉派",-12], ["赵大全","—",18], ["林剑行","铁鹰派",-26] ] },
+
+      { nm:"赵大全", fac:"辽南本位派", role:"朝鲜矿产开发 · 野外勘探", age:36, hp:78, stance:"务实派，常年在外带回岩石样本",
+        a:[13,10,10,8,11,12], spec:[1,2,0,1,3], bond:3, pt:1,
+        fates:[ ["矿","技术顿悟","在选矿问题上想通——免费完成 1 个科技节点。"],
+                ["海","海上风暴","出海遇大风，HP −20；生还后 VIG +1。" ] ],
+        rel:[ ["邓敏","辽南本位派",18], ["林深河","铁炉派",15], ["易冉武","铁炉派",9], ["安楠","临高路线派",2] ] },
+
+      { nm:"林剑行", fac:"铁鹰派", role:"法务 · 司法终审", age:43, hp:70, stance:"文明主体论与大陆干预主义，1644 年前粉碎内亚集团",
+        a:[9,13,14,9,12,10], spec:[2,0,1,3,1], bond:2, pt:1,
+        fates:[ ["法","基层渗透（Lv3）","归化民忠诚度上限 +10；政保局误捕概率 −20%。"],
+                ["危","中年危机","对穿越使命产生怀疑，WIL 检定 ≥6 通过。" ] ],
+        rel:[ ["朱鸣夏","铁鹰派",34], ["邓敏","辽南本位派",-26], ["安楠","临高路线派",-15], ["明朗","辽南本位派",-10] ] },
+
+      { nm:"明朗", fac:"辽南本位派", role:"人事 · 干部选配", age:39, hp:82, stance:"以多派系清算式甄别配置岗位，把握各派底线",
+        a:[8,12,12,11,13,12], spec:[0,1,1,4,1], bond:4, pt:1,
+        fates:[ ["吏","地方精英（Lv4）","解锁归化民『本土官员』岗位，可任命县级职务。"],
+                ["信","与家眷通信","故土来信报喜，WIL +2。" ] ],
+        rel:[ ["邓敏","辽南本位派",30], ["安楠","临高路线派",12], ["朱鸣夏","铁鹰派",-8], ["林剑行","铁鹰派",-10] ] },
+
+      { nm:"易冉武", fac:"铁炉派", role:"经济建模 · 数据分析", age:35, hp:80, stance:"数据驱动的经济学家，汉本位立场",
+        a:[8,14,11,8,14,10], spec:[0,3,2,2,3], bond:3, pt:1,
+        fates:[ ["研","交叉领域（Lv2）","选定 2 相邻科技节点，解锁时同时获得。"],
+                ["病","积劳成疾风险","连续高强度工作，体魄承压，需安排休养。" ] ],
+        rel:[ ["林深河","铁炉派",28], ["赵大全","—",9], ["安楠","临高路线派",4], ["林剑行","铁鹰派",-6] ] },
+    ];
+
+    const HP_STATE = (hp) => hp>=80?["健旺","green"]:hp>=50?["疲惫","amber"]:hp>=30?["病弱","amber"]:hp>=10?["危重","red"]:["死亡","red"];
+    const HP_NOTE = { "健旺":"80–100 健旺：无惩罚；每年 +1 最高属性。HP +3/季度，冬季额外 +1。",
+      "疲惫":"50–79 疲惫：行政力上限 −1；专长点获取需额外 1 个月。",
+      "病弱":"30–49 病弱：所有加成减半；主导的工程 / 谈判效率 −20%。",
+      "危重":"10–29 危重：无法主导任何事务；每季度 15% 概率恶化。" };
+    const AGE_NOTE = (a) => a<40?"20–39 岁：无自然衰减":a<50?"40–49 岁：体魄 −1/3 年，可能中年顿悟":a<60?"50–59 岁：体魄 −1/2 年，可『传道』":"60+ 岁：INT/WIL 可破 18，行政力 −2";
+
+    let cur = 0;
+    const list = document.getElementById("elderList");
+    ELDERS.forEach((e, i) => {
+      const st = HP_STATE(e.hp);
+      const el = document.createElement("div");
+      el.className = "elder"; el.dataset.i = i; el.setAttribute("aria-pressed", i === 0);
+      el.innerHTML = `<div class="ava" style="border-color:${FAC_COLOR[e.fac]}">${e.nm[0]}</div>
+        <div><div class="elder-nm">${e.nm}</div><div class="elder-sub">${e.fac} · ${e.age}岁</div></div>
+        <div class="hp-chip" style="color:${st[1]==='green'?'var(--green)':st[1]==='amber'?'var(--amber)':'var(--red)'}">${st[0]} ${e.hp}</div>`;
+      el.addEventListener("click", () => { cur = i; render(); });
+      list.appendChild(el);
+    });
+
+    function radar(vals) {
+      const cx = 110, cy = 110, R = 84, N = 6;
+      const pt = (i, r) => [cx + r*Math.cos(-Math.PI/2 + i*2*Math.PI/N), cy + r*Math.sin(-Math.PI/2 + i*2*Math.PI/N)];
+      let grid = "";
+      [0.25,0.5,0.75,1].forEach(f => {
+        let p = "";
+        for (let i=0;i<N;i++){ const [x,y]=pt(i,R*f); p += `${x.toFixed(1)},${y.toFixed(1)} `; }
+        grid += `<polygon points="${p}" fill="none" stroke="rgba(222,214,189,0.14)"/>`;
+      });
+      let axes = "", labels = "";
+      for (let i=0;i<N;i++){ const [x,y]=pt(i,R); axes += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(222,214,189,0.14)"/>`;
+        const [lx,ly]=pt(i,R+16); labels += `<text x="${lx}" y="${ly}" fill="#b8bdba" font-size="10" text-anchor="middle" dominant-baseline="middle">${ATTRS[i].slice(0,2)}</text>`; }
+      let poly = "";
+      for (let i=0;i<N;i++){ const [x,y]=pt(i, R*Math.min(vals[i],15)/15); poly += `${x.toFixed(1)},${y.toFixed(1)} `; }
+      return grid + axes + `<polygon points="${poly}" fill="rgba(213,155,66,0.28)" stroke="#d59b42" stroke-width="2"/>` + labels;
+    }
+
+    function render() {
+      const e = ELDERS[cur];
+      document.querySelectorAll(".elder").forEach(x => x.setAttribute("aria-pressed", +x.dataset.i === cur));
+      const av = document.getElementById("dAva");
+      av.textContent = e.nm[0]; av.style.borderColor = FAC_COLOR[e.fac]; av.style.color = FAC_COLOR[e.fac];
+      document.getElementById("dName").textContent = e.nm;
+      document.getElementById("dMeta").textContent = `${e.fac} · ${e.role} · ${e.age} 岁`;
+      document.getElementById("dStanceNote").textContent = e.stance;
+
+      const st = HP_STATE(e.hp);
+      const chip = document.getElementById("dHpChip");
+      chip.textContent = `${st[0]} ${e.hp}`;
+      chip.style.color = st[1]==='green'?'var(--green)':st[1]==='amber'?'var(--amber)':'var(--red)';
+
+      document.getElementById("radar").innerHTML = radar(e.a);
+      document.getElementById("attrLegend").innerHTML = e.a.map((v,i)=>`<span>${ATTRS[i]} <b>${v}</b></span>`).join("");
+
+      document.getElementById("dHpState").textContent = st[0];
+      const bar = document.getElementById("dHpBar");
+      bar.style.width = e.hp + "%";
+      bar.parentElement.className = "bar " + st[1];
+      document.getElementById("dHpNote").textContent = HP_NOTE[st[0]] || "";
+
+      document.getElementById("dAge").textContent = e.age;
+      document.getElementById("dAgeNote").textContent = AGE_NOTE(e.age);
+      document.getElementById("dBond").textContent = e.bond;
+      document.getElementById("dPt").textContent = e.pt;
+
+      document.getElementById("specs").innerHTML = e.spec.map((lv,i)=>{
+        const pips = Array.from({length:5},(_,k)=>`<div class="pip ${k<lv?'on':''} ${k<lv && lv===5?'gold':''}"></div>`).join("");
+        return `<div class="spec"><span class="spec-name">${ROUTES[i]}</span><div class="pips">${pips}</div><span style="text-align:right;color:var(--muted)">Lv${lv}</span></div>`;
+      }).join("");
+
+      document.getElementById("fateList").innerHTML = e.fates.map(f=>
+        `<div class="fate"><div class="fate-ic">${f[0]}</div><div><div class="fate-t">${f[1]}</div><div class="fate-b">${f[2]}</div></div></div>`).join("");
+
+      const relColor = (v)=> v>=30?'var(--green)':v>=10?'var(--steel)':v>-10?'var(--muted)':v>-30?'var(--amber)':'var(--red)';
+      const relLabel = (v)=> v>=30?'挚友/战友':v>=10?'同僚':v>-10?'陌路':v>-30?'嫌隙':'对立';
+      document.getElementById("relList").innerHTML = e.rel.map(r=>
+        `<div class="rel"><span><span class="rel-name">${r[0]}</span> <span class="hint">${r[1]}</span></span>
+         <span class="rel-val" style="color:${relColor(r[2])}">${r[2]>0?'+':''}${r[2]} · ${relLabel(r[2])}</span></div>`).join("");
+    }
+    render();
+  </script>
+</body>
+</html>

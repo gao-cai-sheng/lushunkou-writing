@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 棱堡构造剖面</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    /* ── 舞台 ─────────────────────────────────────────── */
+    .stage {
+      position: absolute; top: 92px; left: 20px; right: 372px; bottom: 92px;
+      border: 1px solid var(--line); overflow: hidden; z-index: 4;
+      background: radial-gradient(130% 110% at 50% 12%, rgba(20,40,52,0.5), rgba(6,12,15,0.96));
+      box-shadow: 0 16px 36px var(--shadow);
+      display: grid; place-items: center;
+    }
+    .stage-overlay {
+      position: absolute; left: 14px; top: 12px; z-index: 6;
+      background: rgba(8,12,13,0.82); border: 1px solid var(--line);
+      padding: 8px 12px; font-size: 12px; color: var(--muted); backdrop-filter: blur(6px);
+    }
+    .stage-overlay b { color: var(--amber); }
+
+    /* 测绘地纹环 */
+    .rings { position: absolute; left: 50%; top: 56%; transform: translate(-50%,-50%); pointer-events: none; opacity: 0.5; z-index: 1; }
+    .rings i { position: absolute; left: 50%; top: 50%; border: 1px solid rgba(123,166,182,0.16); transform: translate(-50%,-50%) scaleY(0.5); border-radius: 50%; }
+
+    /* 棱堡爆炸图 */
+    .fort-wrap { position: relative; --peel: 0; z-index: 2; }
+    .fort { position: relative; width: 360px; height: 360px; }
+
+    .layer {
+      position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; margin: -150px 0 0 -150px;
+      --i: 0; --base: 30px; --gap: 70px;
+      transform: translateY(calc(var(--i) * -1 * (var(--base) + var(--peel) * var(--gap)))) scaleY(0.5);
+      transition: transform .55s cubic-bezier(.22,.61,.36,1), filter .3s, opacity .3s;
+      filter: drop-shadow(0 24px 15px rgba(0,0,0,0.55));
+      cursor: pointer;
+    }
+    .star {
+      position: absolute; inset: 0;
+      clip-path: polygon(50% 0,72.6% 27.4%,100% 50%,72.6% 72.6%,50% 100%,27.4% 72.6%,0 50%,27.4% 27.4%);
+    }
+    .star.top { background: var(--col); background-image: linear-gradient(125deg, rgba(255,255,255,0.14), rgba(0,0,0,0.22)); }
+    .star.side { top: 22px; filter: brightness(0.55); background: var(--col); }
+    .layer .edge {
+      position: absolute; inset: 0;
+      clip-path: polygon(50% 0,72.6% 27.4%,100% 50%,72.6% 72.6%,50% 100%,27.4% 72.6%,0 50%,27.4% 27.4%);
+      box-shadow: inset 0 0 0 1.5px rgba(222,214,189,0.34);
+      mix-blend-mode: screen;
+    }
+    .cannon { position: absolute; width: 44px; height: 6px; background: linear-gradient(#2a2724,#15130f); top: 48%; left: 62%; transform-origin: left center; box-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
+    @keyframes rise { from { opacity: 0; transform: translateY(38px) scaleY(0.5); } }
+    .fort.intro .layer { animation: rise .8s both; }
+
+    /* ── 右侧断面详情 ─────────────────────────────────── */
+    .strata { top: 92px; right: 20px; width: 336px; bottom: 92px; display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+    .strata-body { overflow: auto; }
+    .stratum {
+      padding: 13px 16px; border-bottom: 1px solid var(--line-soft); cursor: pointer;
+      transition: background .2s, box-shadow .2s;
+    }
+    .stratum:hover, .stratum.on { background: rgba(123,166,182,0.12); box-shadow: inset 3px 0 0 var(--steel); }
+    .stratum-top { display: flex; align-items: center; gap: 10px; }
+    .swatch { width: 13px; height: 13px; flex: none; border: 1px solid rgba(255,255,255,0.3); }
+    .stratum-name { font-size: 15px; font-weight: 800; }
+    .stratum-idx { margin-left: auto; font-size: 11px; color: var(--faint); letter-spacing: 0.08em; }
+    .stratum-desc { margin-top: 7px; font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .stratum-meta { margin-top: 9px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── 引线 ─────────────────────────────────────────── */
+    #leaders { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    #leaders path { fill: none; stroke: var(--steel); stroke-width: 1; opacity: 0.45; transition: opacity .3s, stroke-width .3s; }
+    #leaders circle { fill: var(--steel); }
+
+    /* ── 底部剥离条 ───────────────────────────────────── */
+    .peel-group { display: flex; align-items: center; gap: 14px; width: 100%; }
+    .peel-cap { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; color: var(--amber); white-space: nowrap; }
+    .peel-slot { position: relative; flex: 1; height: 34px; display: flex; align-items: center; max-width: 560px; }
+    .peel-slot .track { position: absolute; left: 0; right: 0; height: 2px; background: rgba(222,214,189,0.2); }
+    .peel-slot .ticks { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; }
+    .peel-slot .ticks i { width: 1px; height: 9px; background: rgba(222,214,189,0.28); }
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; background: transparent; position: relative; z-index: 2; margin: 0; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border: 1.5px solid rgba(222,214,189,0.5);
+      background: radial-gradient(circle at 35% 30%, #9fcad9, var(--steel) 60%, #3d5d68); cursor: grab;
+      box-shadow: 0 0 10px rgba(123,166,182,0.5);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 18px; height: 18px; border: 1.5px solid rgba(222,214,189,0.5);
+      background: radial-gradient(circle at 35% 30%, #9fcad9, var(--steel) 60%, #3d5d68); cursor: grab;
+    }
+    .pct { font-family: ui-monospace, monospace; font-size: 14px; font-weight: 800; color: var(--ink); width: 48px; text-align: right; }
+    .bastion-cutaway {
+      background:
+        radial-gradient(95% 70% at 50% 42%, rgba(216,207,185,0.08), transparent 64%),
+        linear-gradient(180deg, rgba(22,27,25,0.92), rgba(8,10,10,0.98));
+    }
+    .dimension-line {
+      position: absolute;
+      z-index: 3;
+      height: 1px;
+      background: rgba(216,207,185,0.34);
+      color: var(--paper-dim);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+    .dimension-line::before,
+    .dimension-line::after {
+      content: "";
+      position: absolute;
+      top: -4px;
+      width: 1px;
+      height: 9px;
+      background: rgba(216,207,185,0.45);
+    }
+    .dimension-line::before { left: 0; }
+    .dimension-line::after { right: 0; }
+    .dimension-line span {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .dimension-line.wall { width: 260px; right: 68px; top: 138px; }
+    .dimension-line.moat { width: 360px; left: 76px; bottom: 128px; }
+    .postern-tunnel::after {
+      content: "";
+      position: absolute;
+      left: 18%;
+      bottom: 28px;
+      width: 190px;
+      height: 2px;
+      border-top: 2px dashed rgba(201,154,77,0.62);
+      transform: rotate(-12deg);
+      opacity: 0.86;
+    }
+    .casemate-chamber .cannon {
+      background: linear-gradient(#201a14, #0d0b09);
+      box-shadow: 0 0 0 1px rgba(216,207,185,0.16), 0 1px 2px rgba(0,0,0,0.6);
+    }
+    .fort.intro .layer {
+      animation: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">棱堡构造 · 工程司</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="tech-tree.html">科技树</a>
+        <a href="strategic-map.html">战略态势</a>
+        <a href="senate-roster.html">元老名册</a>
+        <a href="diplomacy.html">外交博弈</a>
+        <a href="bastion-section.html" class="active">棱堡剖面</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>棱堡工事 · 黄金山</span><span class="pill green">已竣工</span></div>
+      </div>
+    </header>
+
+    <!-- 舞台 -->
+    <section class="stage bastion-cutaway game-map-surface">
+      <div class="stage-overlay">四棱堡 · 断面 <b>5</b> 层 · 拖动下方滑块逐层<b>剥离</b></div>
+      <div class="dimension-line wall"><span>外墙厚 5 米 · 雉堞射孔</span></div>
+      <div class="dimension-line moat"><span>干壕与鹿砦带 · 冬季注水结冰</span></div>
+      <div class="rings">
+        <i style="width:120px;height:120px"></i>
+        <i style="width:240px;height:240px"></i>
+        <i style="width:360px;height:360px"></i>
+        <i style="width:500px;height:500px"></i>
+      </div>
+      <div class="fort-wrap postern-tunnel" id="fortWrap"><div class="fort intro casemate-chamber" id="fort"></div></div>
+    </section>
+
+    <!-- 右侧断面详情 -->
+    <aside class="panel strata">
+      <div class="panel-head">
+        <div class="eyebrow">断面构造 · STRATA</div>
+        <div class="panel-title">棱堡构造剖面</div>
+        <div class="panel-meta">自外墙至地基共五层。悬停某层 / 某条目，模型与名册互相高亮。</div>
+      </div>
+      <div class="strata-body" id="strata"></div>
+    </aside>
+
+    <svg id="leaders"></svg>
+
+    <!-- 底部剥离条 -->
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <div class="peel-group">
+          <span class="peel-cap">复位</span>
+          <div class="peel-slot">
+            <div class="track"></div>
+            <div class="ticks"><i></i><i></i><i></i><i></i><i></i></div>
+            <input type="range" id="peel" min="0" max="100" value="0">
+          </div>
+          <span class="peel-cap">完全剥离</span>
+          <span class="pct" id="pct">0%</span>
+        </div>
+      </div>
+      <div class="bottom-group right">
+        <div class="hint">悬停层 / 条目互相高亮 · <span class="kbd">↕</span> 逐层解剖</div>
+      </div>
+    </footer>
+  </main>
+
+<script>
+  // 自底向上：地基 → 外墙
+  const LAYERS = [
+    {id:"foundation", name:"地基 · 暗道",   en:"FOUNDATION", col:"#4a4640",
+     desc:"排水与暗道，连通城内外，可秘密出击或补给。", tags:[["暗道 3 条","steel"],["排水 良","green"]]},
+    {id:"magazine",   name:"守军 · 弹药库", en:"GARRISON",   col:"#6f5a3e",
+     desc:"驻防营房与火药贮存，深埋于土垒之下以避炮击。", tags:[["守军 320","steel"],["火药 12 担","mid"]]},
+    {id:"casemate",   name:"炮位夹层",     en:"CASEMATE",   col:"#6d6b66",
+     desc:"棱角炮位，与相邻棱堡形成交叉火力封锁侧翼。", cannon:true, tags:[["红夷炮 6","high"],["交叉火力","cyan"]]},
+    {id:"rampart",    name:"土垒",         en:"RAMPART",    col:"#8a7448",
+     desc:"夯土斜坡，吸收并消解实心炮弹的冲击动能。", tags:[["夯土 8 尺","steel"],["抗炮 优","green"]]},
+    {id:"escarp",     name:"外墙 · 雉堞",   en:"ESCARP",     col:"#9fa1a3",
+     desc:"石砌护墙与垛口，士兵据垛口射击、瞭望海防。", tags:[["垛口 28","steel"],["石砌","mid"]]},
+  ];
+
+  function lighten(hex, amt){
+    const n=parseInt(hex.replace('#',''),16);
+    let r=Math.min(255,(n>>16)+amt*255|0), g=Math.min(255,((n>>8)&255)+amt*255|0), b=Math.min(255,(n&255)+amt*255|0);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  const fort=document.getElementById('fort'), strata=document.getElementById('strata');
+  const layerEls=[], rowEls=[];
+
+  // 建层（DOM 底层先 → z-index 低）
+  LAYERS.forEach((L,i)=>{
+    const el=document.createElement('div');
+    el.className='layer';
+    el.style.setProperty('--i',i);
+    el.style.setProperty('--col',L.col);
+    el.style.zIndex=i+1;
+    el.style.animationDelay=(LAYERS.length-1-i)*0.09+'s';
+    el.innerHTML=`<div class="star side"></div><div class="star top"></div><div class="edge"></div>`+
+      (L.cannon?`<div class="cannon" style="transform:rotate(-18deg)"></div><div class="cannon" style="left:18%;top:50%;transform:rotate(160deg)"></div>`:'');
+    fort.appendChild(el);
+    layerEls.push(el);
+    el.addEventListener('mouseenter',()=>highlight(i));
+    el.addEventListener('mouseleave',()=>highlight(-1));
+  });
+
+  // 建条目（视觉自顶向下：外墙在上 → 逆序）
+  for(let i=LAYERS.length-1;i>=0;i--){
+    const L=LAYERS[i];
+    const row=document.createElement('div');
+    row.className='stratum';
+    const tags=(L.tags||[]).map(t=>`<span class="badge ${t[1]}">${t[0]}</span>`).join('');
+    row.innerHTML=
+      `<div class="stratum-top">
+         <span class="swatch" style="background:${L.col}"></span>
+         <span class="stratum-name" style="color:${lighten(L.col,.28)}">${L.name}</span>
+         <span class="stratum-idx">0${i+1} · ${L.en}</span>
+       </div>
+       <div class="stratum-desc">${L.desc}</div>
+       <div class="stratum-meta">${tags}</div>`;
+    strata.appendChild(row);
+    rowEls[i]=row;
+    row.addEventListener('mouseenter',()=>highlight(i));
+    row.addEventListener('mouseleave',()=>highlight(-1));
+  }
+
+  const svg=document.getElementById('leaders');
+  function drawLeaders(hi){
+    svg.innerHTML='';
+    const steel=getComputedStyle(document.documentElement).getPropertyValue('--steel').trim();
+    const amber=getComputedStyle(document.documentElement).getPropertyValue('--amber').trim();
+    layerEls.forEach((el,i)=>{
+      const lr=el.getBoundingClientRect(), cr=rowEls[i].getBoundingClientRect();
+      const x1=lr.right-lr.width*0.16, y1=lr.top+lr.height/2;
+      const x2=cr.left, y2=cr.top+cr.height/2;
+      const mx=(x1+x2)/2;
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
+      const on=hi===-1||hi===i;
+      p.style.opacity=on?(hi===i?'0.95':'0.42'):'0.1';
+      p.style.strokeWidth=hi===i?'1.8':'1';
+      if(hi===i)p.setAttribute('stroke',amber);
+      svg.appendChild(p);
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx',x1);dot.setAttribute('cy',y1);dot.setAttribute('r',hi===i?'3.4':'2.3');
+      dot.style.opacity=on?'1':'0.18';
+      if(hi===i)dot.setAttribute('fill',amber);
+      svg.appendChild(dot);
+    });
+  }
+
+  let curHi=-1;
+  function highlight(i){
+    curHi=i;
+    layerEls.forEach((el,k)=>{
+      el.style.opacity=(i===-1||i===k)?'1':'0.32';
+      el.style.filter=i===k?'drop-shadow(0 28px 20px rgba(0,0,0,0.6)) brightness(1.18)':'';
+    });
+    rowEls.forEach((r,k)=>r.classList.toggle('on',i===k));
+    drawLeaders(i);
+  }
+
+  const peel=document.getElementById('peel'), pct=document.getElementById('pct');
+  peel.addEventListener('input',()=>{
+    const t=peel.value/100;
+    document.getElementById('fortWrap').style.setProperty('--peel',t);
+    pct.textContent=peel.value+'%';
+    let n=0;const id=setInterval(()=>{drawLeaders(curHi);if(++n>34)clearInterval(id);},16);
+  });
+
+  window.addEventListener('resize',()=>drawLeaders(curHi));
+  setTimeout(()=>{drawLeaders(-1);fort.classList.remove('intro');},850);
+  drawLeaders(-1);
+</script>
+</body>
+</html>

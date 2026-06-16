@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 五方外交博弈</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    .powers { top: 92px; left: 20px; width: 300px; bottom: 92px; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+    .plist { overflow: auto; }
+    .prow { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
+    .prow:hover { background: rgba(244,239,225,0.04); }
+    .prow[aria-pressed="true"] { background: rgba(213,155,66,0.1); box-shadow: inset 3px 0 0 var(--amber); }
+    .prow-top { display: flex; align-items: center; gap: 10px; }
+    .prow-name { font-size: 15px; font-weight: 800; }
+    .prow-stance { margin-left: auto; }
+    /* relation gauge -100..100 */
+    .gauge { margin-top: 11px; height: 10px; position: relative; background: rgba(255,255,255,0.08); }
+    .gauge .zero { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(255,255,255,0.4); }
+    .gauge .fill { position: absolute; top: 0; bottom: 0; }
+    .gauge .mark { position: absolute; top: -3px; width: 3px; height: 16px; background: var(--ink); }
+    .prow-meta { margin-top: 7px; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+    .ap-box { padding: 13px 16px; border-top: 1px solid var(--line); background: rgba(6,10,11,0.4); }
+    .ap-dots { display: flex; gap: 6px; margin-top: 8px; }
+    .ap-dot { width: 26px; height: 10px; background: var(--steel); }
+    .ap-dot.spent { background: rgba(255,255,255,0.12); }
+
+    .dossier { position: absolute; top: 92px; left: 336px; right: 372px; bottom: 92px; border: 1px solid var(--line); background: var(--panel); overflow: auto; z-index: 4; box-shadow: 0 16px 36px var(--shadow); }
+    .dos-head { padding: 20px 22px; border-bottom: 1px solid var(--line); background: rgba(6,10,11,0.4); display: flex; align-items: center; gap: 16px; }
+    .crest { width: 56px; height: 56px; display: grid; place-items: center; border: 2px solid; font-weight: 900; font-size: 24px; }
+    .dos-name { font-size: 26px; font-weight: 900; }
+    .dos-rel { margin-top: 5px; font-size: 13px; color: var(--muted); }
+    .big-gauge { margin: 0 22px; padding: 18px 0 6px; border-bottom: 1px solid var(--line); }
+    .scale-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--faint); margin-top: 6px; }
+    .dos-body { padding: 18px 22px; }
+    .interest { padding: 13px; background: rgba(123,166,182,0.1); border: 1px solid rgba(123,166,182,0.3); font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+    .thresh { display: grid; gap: 8px; margin-bottom: 18px; }
+    .th { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; font-size: 12.5px; padding: 9px 11px; border: 1px solid var(--line-soft); background: rgba(9,13,14,0.4); }
+    .th b { color: var(--amber); }
+    .acts table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .acts th, .acts td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line-soft); }
+    .acts th { color: var(--muted); font-weight: 700; font-size: 11px; }
+    .delta { font-weight: 800; text-align: right; white-space: nowrap; }
+    .delta.up { color: var(--green); } .delta.down { color: var(--red); }
+
+    .menu { top: 92px; right: 20px; width: 336px; bottom: 92px; display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+    .menu-body { overflow: auto; padding: 14px 16px; }
+    .dact { width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 11px 12px; margin-bottom: 8px; border: 1px solid var(--line-soft); background: rgba(244,239,225,0.04); cursor: pointer; }
+    .dact:hover { border-color: var(--steel); background: rgba(123,166,182,0.1); }
+    .dact:disabled { opacity: 0.4; cursor: not-allowed; }
+    .dact-nm { font-size: 13px; font-weight: 800; }
+    .dact-cost { font-size: 11px; color: var(--cyan); font-weight: 800; text-align: right; }
+    .dact-ef { grid-column: 1/3; font-size: 11px; color: var(--muted); }
+    .envoy { padding: 14px 16px; border-top: 1px solid var(--line); background: rgba(6,10,11,0.4); }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .envoy-desk {
+      background:
+        radial-gradient(80% 60% at 50% 18%, rgba(201,154,77,0.08), transparent 66%),
+        linear-gradient(180deg, rgba(32,28,22,0.4), rgba(10,12,12,0.96));
+    }
+    .treaty-table .dos-head {
+      background:
+        linear-gradient(180deg, rgba(60,42,28,0.3), rgba(10,12,12,0.45));
+    }
+    .wax-seal {
+      background: rgba(101,38,30,0.24);
+      box-shadow: inset 0 0 0 1px rgba(201,154,77,0.12);
+    }
+    .credential-stack .dact {
+      background:
+        linear-gradient(90deg, rgba(216,207,185,0.055), rgba(216,207,185,0.018));
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">外交博弈 · 五方关系管理</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="tech-tree.html">科技树</a>
+        <a href="strategic-map.html">战略态势</a>
+        <a href="senate-roster.html">元老名册</a>
+        <a href="diplomacy.html" class="active">外交博弈</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>本季外交行动点 2 / 3</span><span class="pill">橙色警戒</span></div>
+      </div>
+    </header>
+
+    <aside class="panel powers">
+      <div class="panel-head" style="padding:13px 16px"><div class="eyebrow">五方势力 · 关系值</div><div class="panel-title" style="font-size:18px;margin-top:6px">−100 ~ +100</div></div>
+      <div class="plist" id="plist"></div>
+      <div class="ap-box">
+        <div class="section-title"><span>本季行动点</span><span class="badge cyan">情报局 +2</span></div>
+        <div class="ap-dots"><div class="ap-dot"></div><div class="ap-dot"></div><div class="ap-dot spent"></div></div>
+        <div class="hint" style="margin-top:8px">默认每季度 3 次，情报局可扩展至 5 次。</div>
+      </div>
+    </aside>
+
+    <section class="dossier envoy-desk treaty-table">
+      <div class="dos-head">
+        <div class="crest wax-seal" id="dCrest" style="border-color:var(--red);color:var(--red)">清</div>
+        <div>
+          <div class="dos-name" id="dName">清朝（皇太极政权）</div>
+          <div class="dos-rel" id="dStance">基础关系：敌对 · 当前 −60</div>
+        </div>
+      </div>
+      <div class="big-gauge">
+        <div class="gauge" style="height:14px"><div class="zero"></div><div class="fill" id="bgFill"></div><div class="mark" id="bgMark"></div></div>
+        <div class="scale-row"><span>−100 讨伐令</span><span>0 互不侵犯</span><span>+100 同盟</span></div>
+      </div>
+      <div class="dos-body">
+        <div class="section-title" style="margin-bottom:10px"><span>核心利益</span></div>
+        <div class="interest" id="dInterest">控制辽东全境，消除旅顺这颗钉在背后的钉子。可谈判空间有限但存在——清朝在松锦决战、入关等关键期战略重心南移，存在「暂时搁置旅顺问题」的现实需求。</div>
+
+        <div class="section-title" style="margin-bottom:10px"><span>关系阈值事件</span></div>
+        <div class="thresh" id="dThresh"></div>
+
+        <div class="section-title" style="margin-bottom:6px"><span>关键行动对关系值的影响</span></div>
+        <div class="acts"><table id="dActs"></table></div>
+      </div>
+    </section>
+
+    <aside class="panel menu credential-stack">
+      <div class="panel-head"><div class="eyebrow">外交行动菜单</div><div class="panel-title" style="font-size:20px">对 <span id="mTarget">清朝</span> 行动</div></div>
+      <div class="menu-body" id="menuBody"></div>
+      <div class="envoy">
+        <div class="section-title"><span>使节派遣</span><span class="badge mid">资深元老</span></div>
+        <div class="hint" style="margin-top:8px">使节：<b style="color:var(--ink)">安楠</b> · 外交斡旋 Lv1 · CHA 12<br>赴清谈判破裂有 30% 概率被扣押（高 VIG 降至 10%）。</div>
+        <div class="section-title" style="margin-top:14px"><span>谈判筹码 BC</span></div>
+        <div class="chips">
+          <span class="badge steel">物质筹码 1,200 两</span>
+          <span class="badge cyan">情报筹码 IP×42</span>
+          <span class="badge mid">技术让渡（慎用）</span>
+        </div>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <div class="hint">联动：清朝关系 &gt;−20 时 C1 进攻触发概率 −35%；朝鲜 ≥60 解锁对日贸易路线、柞蚕绸年销 +30%；临高 &lt;20 触发 D1「接管令」。外交失败致贸易中断则工人满意度 −8。</div>
+      </div>
+      <div class="bottom-group right">
+        <span class="hint"><span class="kbd">D</span> 外交界面 · <span class="kbd">Esc</span> 关闭</span>
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // 数据取自《旅顺口游戏设定文档》第29章外交系统
+    const POWERS = [
+      { id:"qing", crest:"清", color:"var(--red)", name:"清朝（皇太极政权）", short:"清朝", stance:"敌对", rel:-60,
+        interest:"控制辽东全境，消除旅顺这颗钉在背后的钉子。可谈判空间有限但存在——清朝在松锦决战、入关等关键期战略重心南移，存在「暂时搁置旅顺问题」的现实需求。",
+        thresh:[ ["≥ −20","清朝默认『需处理但不急』，清军进攻触发概率大幅下降。"],
+                 ["≤ −80","清朝宣布『讨伐令』，触发 C1 高烈度进攻模式。"],
+                 ["≥ 0（极难）","可谈判『互不侵犯协议』，10 年有效期，双方均可单方面撕毁。"] ],
+        acts:[ ["向清军边境哨所主动开炮","-20","不可逆"], ["拒绝清朝索要朝鲜义军情报","-8","每次"],
+               ["经中间商出售铁器（不含武器）","+5","清朝获实惠但知来源"], ["协助截获并移交清朝通缉的明官","+15","得罪明朝残部"],
+               ["公开接受南明册封","-25","视为敌对宣言"], ["清军南下前秘密预警明军","-30","若证实直接触发 C1"] ] },
+      { id:"ming", crest:"明", color:"var(--violet)", name:"大明（崇祯 / 南明残余）", short:"大明", stance:"中立偏正", rel:20,
+        interest:"明朝希望元老院抗清，但对其真实意图高度警惕。1644 年崇祯殉国后，关系对象转为南明诸王（弘光、隆武、永历），各政权态度差异较大。",
+        thresh:[ ["1644 崇祯殉国","公开哀悼厚葬南下明官 +15；沉默 ±0；趁机宣布独立 残余 −30、自主 +20。"],
+                 ["接受南明官职","获合法性加成 +20（不影响实权）。"] ],
+        acts:[ ["接受明朝漕粮押运订单","+8","每批次"], ["正规渠道出售武器给明军","+12","清朝 −15"],
+               ["拒绝崇祯『勤王召令』","-15","1644 关键选择"], ["接受南明名义官职","+20","合法性加成"],
+               ["接收并藏匿明朝溃败官员","+10","清朝 −8"], ["拒绝明朝索要技术","-10","每次"] ] },
+      { id:"joseon", crest:"朝", color:"var(--green)", name:"朝鲜（李朝政权）", short:"朝鲜", stance:"合作", rel:35,
+        interest:"夹在清朝与旅顺之间，实为元老院东北亚最有价值的战略缓冲与情报来源。可合作空间：武器购买、情报交换、难民通道、义兵合作。",
+        thresh:[ ["≥ 50","可雇佣朝鲜义兵，每月最多 500 人，战力中等低成本。"],
+                 ["≥ 70","开放釜山港停泊权，对日贸易路线解锁。"],
+                 ["≥ 85","每季度分享一份清军调兵情报。"] ],
+        acts:[ ["优惠价出售钢铁农具","+8","每批"], ["向义兵提供武器训练","+15","清朝得知 −12"],
+               ["签订正式贸易协定","+20","长期稳固"], ["公开支持朝鲜某派","±15","支持失败派则崩塌"],
+               ["拒绝交还越境逃犯","-10","王室面子"], ["接收难民不通知汉城","-8","人口流失威胁"] ] },
+      { id:"japan", crest:"日", color:"var(--cyan)", name:"日本（江户幕府 + 长崎商馆）", short:"日本", stance:"商业合作", rel:15,
+        interest:"对旅顺兴趣几乎完全是商业性的——柞蚕绸、钢铁制品、新奇商品。锁国令使官方外交几无可能，实际接触通过长崎唐人馆商人网络。",
+        thresh:[ ["≥ 40","长崎唐人馆专属货仓，旅顺商品优先入市。"],
+                 ["≥ 60","幕府医疗顾问秘密访问，医药研究 + 情报渗透机会。"],
+                 ["≥ 75","日本学徒商人入驻西港，日本情报网建立。"] ],
+        acts:[ ["稳定输出优质柞蚕绸（≥30 万尺/年）","+5","商誉积累"], ["向长崎商人出售磺胺 / 奎宁","+10","幕府感兴趣"],
+               ["泄露蒸汽机原理","+20","科技扩散极高，极危险"], ["参与朱印船贸易网络","+15","荷兰 −10"],
+               ["对马岛武力冲突","-25","难以修复"] ] },
+      { id:"lingao", crest:"临", color:"var(--steel)", name:"临高总部（元老院核心）", short:"临高", stance:"附属", rel:50,
+        interest:"临高不是『外部势力』而是旅顺上级。这段关系本质是『在同一体制内争夺自主权』——临高希望旅顺提供北方战略价值，但不希望辽南真正独立。",
+        thresh:[ ["≥ 70","主动增加年度补给配额，技术支援优先级提升。"],
+                 ["40–69","正常附属关系，互有期待与摩擦。"],
+                 ["20–39","限制关键物资（蒸汽机零件、药品），触发 B3 供应链中断。"],
+                 ["< 20","触发 D1 路线分裂最严重分支——临高发出『接管令』。"] ],
+        acts:[ ["按期完成钢铁 / 武器输出配额","+10","每季『乖孩子』路线"], ["主动汇报辽东战略情报","+8","信息依附换信任"],
+               ["要求增加决策自主权","-12","权力中枢不喜"], ["拒绝调派本地元老回总部","-15","被视为藏私"],
+               ["单方面与清朝非授权接触","-20","视为失控信号"], ["财政完全独立","+5","但自主压力 +15"] ] },
+    ];
+    const ACTIONS = [
+      ["正式外交信函","50 两 + 1 行动点","关系值 ±3–8，建立对话渠道"],
+      ["贸易协定谈判","200 两 + 2 行动点","达成后每季度自动 +5 关系值"],
+      ["秘密情报共享","1 行动点 + 情报消耗","关系 +10–20，泄露则第三方 −15"],
+      ["武器出口申请","3 行动点 + 军委批准","关系 +12，财政 +X，清朝 −8"],
+      ["请求军事互助","2 行动点 + 关系 ≥60","触发对方增援事件"],
+      ["暗杀 / 颠覆","4 行动点 + 政保特工","成功率 30–50%，失败则 −30"],
+      ["公开声明 / 宣言","0 成本 + 1 行动点","多方关系大幅波动，不可撤回"],
+      ["秘密协议","2 行动点","不公开，双方可随时撕毁"],
+    ];
+
+    const relColor = (v)=> v<=-40?'var(--red)':v<0?'var(--amber)':v<40?'var(--steel)':'var(--green)';
+    let cur = 0;
+    const plist = document.getElementById("plist");
+    POWERS.forEach((p,i)=>{
+      const pct = (p.rel+100)/2;
+      const el = document.createElement("div");
+      el.className="prow"; el.dataset.i=i; el.setAttribute("aria-pressed", i===0);
+      const fillStyle = p.rel>=0 ? `left:50%;width:${p.rel/2}%;background:${relColor(p.rel)}` : `right:50%;width:${-p.rel/2}%;background:${relColor(p.rel)}`;
+      el.innerHTML = `<div class="prow-top"><span class="crest" style="width:24px;height:24px;font-size:13px;border-color:${p.color};color:${p.color}">${p.crest}</span>
+        <span class="prow-name">${p.short}</span><span class="prow-stance badge ${p.rel<=-40?'high':p.rel<0?'mid':p.rel<40?'steel':'low'}">${p.stance}</span></div>
+        <div class="gauge"><div class="zero"></div><div class="fill" style="${fillStyle}"></div><div class="mark" style="left:calc(${pct}% - 1px)"></div></div>
+        <div class="prow-meta"><span>${p.name.split('（')[0]}</span><span style="color:${relColor(p.rel)};font-weight:800">${p.rel>0?'+':''}${p.rel}</span></div>`;
+      el.addEventListener("click", ()=>{ cur=i; render(); });
+      plist.appendChild(el);
+    });
+
+    function render() {
+      const p = POWERS[cur];
+      document.querySelectorAll(".prow").forEach(x=>x.setAttribute("aria-pressed", +x.dataset.i===cur));
+      const crest = document.getElementById("dCrest");
+      crest.textContent = p.crest; crest.style.borderColor = p.color; crest.style.color = p.color;
+      document.getElementById("dName").textContent = p.name;
+      document.getElementById("dStance").textContent = `基础关系：${p.stance} · 当前 ${p.rel>0?'+':''}${p.rel}`;
+      const pct = (p.rel+100)/2;
+      const fill = document.getElementById("bgFill");
+      if (p.rel>=0) { fill.style.left="50%"; fill.style.right="auto"; fill.style.width=(p.rel/2)+"%"; }
+      else { fill.style.right="50%"; fill.style.left="auto"; fill.style.width=(-p.rel/2)+"%"; }
+      fill.style.background = relColor(p.rel);
+      document.getElementById("bgMark").style.left = `calc(${pct}% - 1px)`;
+      document.getElementById("dInterest").textContent = p.interest;
+
+      document.getElementById("dThresh").innerHTML = p.thresh.map(t=>
+        `<div class="th"><b>${t[0]}</b><span>${t[1]}</span></div>`).join("");
+
+      document.getElementById("dActs").innerHTML =
+        `<tr><th>行动</th><th style="text-align:right">关系变化</th><th>备注</th></tr>` +
+        p.acts.map(a=>
+          `<tr><td>${a[0]}</td><td class="delta ${a[1].startsWith('+')?'up':a[1].startsWith('-')?'down':''}">${a[1]}</td><td style="color:var(--faint)">${a[2]}</td></tr>`
+        ).join("");
+
+      document.getElementById("mTarget").textContent = p.short;
+      document.getElementById("menuBody").innerHTML = ACTIONS.map(act=>{
+        const lock = (act[0]==="请求军事互助" && p.rel<60) || (act[0]==="武器出口申请" && !(p.id==="joseon"||p.id==="ming"));
+        return `<button class="dact" ${lock?'disabled':''}><span class="dact-nm">${act[0]}</span><span class="dact-cost">${act[1]}</span><span class="dact-ef">${act[2]}${lock?' · 当前条件未满足':''}</span></button>`;
+      }).join("");
+    }
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>进击旅顺口 · 东北亚战略态势</title>
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    .intel-rail {
+      top: 92px; left: 20px; width: 308px; bottom: 92px;
+      display: grid; grid-template-rows: auto 1fr auto; min-height: 0;
+    }
+    .watch { overflow: auto; padding: 8px 12px; }
+    .power {
+      padding: 12px 8px; border-bottom: 1px solid var(--line-soft); cursor: pointer;
+    }
+    .power:hover { background: rgba(244,239,225,0.04); }
+    .power[aria-pressed="true"] { background: rgba(123,166,182,0.12); box-shadow: inset 3px 0 0 var(--steel); }
+    .power-top { display: flex; align-items: center; gap: 10px; }
+    .swatch { width: 12px; height: 12px; flex: none; border: 1px solid rgba(255,255,255,0.3); }
+    .power-name { font-size: 14px; font-weight: 800; }
+    .power-stance { margin-left: auto; font-size: 11px; }
+    .power-meta { margin-top: 7px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 11px; color: var(--muted); }
+    .ip-bar { margin-top: 7px; }
+
+    .ipbox { padding: 13px 16px; border-top: 1px solid var(--line); background: rgba(6,10,11,0.4); }
+
+    .mapwrap {
+      position: absolute; top: 92px; left: 344px; right: 372px; bottom: 92px;
+      border: 1px solid var(--line); overflow: hidden; z-index: 4;
+      background: radial-gradient(130% 100% at 60% 20%, rgba(20,40,52,0.55), rgba(6,12,15,0.95));
+      box-shadow: 0 16px 36px var(--shadow);
+    }
+    .mapwrap svg { width: 100%; height: 100%; display: block; }
+    .sea-grid line { stroke: rgba(123,166,182,0.1); stroke-width: 1; }
+    .coast { fill: rgba(40,52,46,0.5); stroke: rgba(222,214,189,0.35); stroke-width: 1.5; }
+    .zone { stroke-width: 1.2; }
+    .zlabel { fill: var(--ink); font-size: 15px; font-weight: 800; font-family: inherit; }
+    .zsub { fill: var(--muted); font-size: 11px; font-family: inherit; }
+    .threat { fill: none; stroke: var(--red); stroke-width: 2.5; stroke-dasharray: 9 8; opacity: 0.8; }
+    .trade { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-dasharray: 4 8; opacity: 0.7; }
+    @keyframes ping { 0% { r: 10; opacity: 0.9 } 100% { r: 30; opacity: 0 } }
+    .us-ping { fill: none; stroke: var(--amber); stroke-width: 2; animation: ping 2.4s ease-out infinite; }
+    .map-overlay {
+      position: absolute; left: 14px; top: 12px; z-index: 5;
+      background: rgba(8,12,13,0.82); border: 1px solid var(--line);
+      padding: 8px 12px; font-size: 12px; backdrop-filter: blur(6px);
+    }
+    .map-overlay b { color: var(--amber); }
+    .scale {
+      position: absolute; right: 14px; bottom: 12px; z-index: 5;
+      display: flex; gap: 2px; background: rgba(8,12,13,0.82); border: 1px solid var(--line); padding: 4px;
+    }
+    .scale button { width: 34px; height: 28px; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 800; }
+    .scale button.on { background: rgba(213,155,66,0.2); border-color: rgba(213,155,66,0.55); color: #ffe0a5; }
+
+    .feed { top: 92px; right: 20px; width: 336px; bottom: 92px; display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+    .feed-body { overflow: auto; padding: 14px 16px; }
+    .intel {
+      border: 1px solid var(--line); background: rgba(9,13,14,0.55); margin-bottom: 14px;
+    }
+    .intel-head { display: flex; align-items: center; gap: 9px; padding: 11px 13px; border-bottom: 1px solid var(--line-soft); }
+    .intel-head .src { font-size: 11px; color: var(--faint); margin-left: auto; }
+    .intel-title { font-size: 13.5px; font-weight: 800; line-height: 1.3; }
+    .intel-body { padding: 11px 13px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .opts { display: grid; gap: 6px; padding: 0 13px 13px; }
+    .opt { text-align: left; border: 1px solid var(--line-soft); background: rgba(244,239,225,0.04); padding: 8px 10px; cursor: pointer; font-size: 12px; }
+    .opt:hover { border-color: var(--steel); background: rgba(123,166,182,0.1); }
+    .opt b { color: var(--amber); margin-right: 4px; }
+    .campaign-map {
+      background:
+        radial-gradient(80% 60% at 54% 44%, rgba(216,207,185,0.06), transparent 70%),
+        linear-gradient(180deg, rgba(31,39,38,0.9), rgba(8,11,11,0.98));
+    }
+    .campaign-map .sea-lane {
+      stroke: rgba(216,207,185,0.62);
+      stroke-width: 2;
+      stroke-dasharray: 5 8;
+    }
+    .intelligence-tag {
+      border-color: rgba(201,154,77,0.42);
+      background: rgba(16,19,18,0.88);
+    }
+    .compass-rose {
+      position: absolute;
+      right: 22px;
+      top: 22px;
+      z-index: 6;
+      width: 78px;
+      height: 78px;
+      border: 1px solid rgba(216,207,185,0.28);
+      display: grid;
+      place-items: center;
+      color: var(--paper-dim);
+      font-size: 11px;
+      font-weight: 900;
+      background: rgba(9,12,12,0.46);
+    }
+    .compass-rose::before,
+    .compass-rose::after {
+      content: "";
+      position: absolute;
+      background: rgba(216,207,185,0.28);
+    }
+    .compass-rose::before { width: 1px; height: 58px; }
+    .compass-rose::after { width: 58px; height: 1px; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">辽</div>
+        <div><div class="brand-title">进击旅顺口</div><div class="brand-sub">战略态势 · 对外情报局</div></div>
+      </div>
+      <nav class="screen-nav">
+        <a href="index.html">防线值班</a>
+        <a href="tech-tree.html">科技树</a>
+        <a href="strategic-map.html" class="active">战略态势</a>
+        <a href="senate-roster.html">元老名册</a>
+        <a href="diplomacy.html">外交博弈</a>
+      </nav>
+      <div class="clock">
+        <div class="clock-main">崇祯十三年 · 腊月初六</div>
+        <div class="clock-sub"><span>情报值总库 IP 84</span><span class="pill red">威胁上升</span></div>
+      </div>
+    </header>
+
+    <aside class="panel intel-rail">
+      <div class="panel-head" style="padding:14px 16px">
+        <div class="eyebrow">对外情报局 · 监测档案</div>
+        <div class="panel-title" style="font-size:18px;margin-top:6px">五方 + 三新 格局</div>
+      </div>
+      <div class="watch" id="watch"></div>
+      <div class="ipbox">
+        <div class="section-title" style="margin-bottom:8px"><span>情报产品节奏</span><span class="badge steel">分析室</span></div>
+        <div class="hint">《周报》每周一次 · 《紧急预警》48 小时内决策 · 《战略评估》每季度<br>情报值随线人暴露衰减，需持续投入维持。</div>
+      </div>
+    </aside>
+
+    <section class="mapwrap campaign-map game-map-surface">
+      <div class="map-overlay intelligence-tag">视野：<b>东北亚全图</b> · Lv4 战略图<br>窗口期：清军主力北调松锦，辽南兵力空虚</div>
+      <div class="compass-rose">北</div>
+      <svg viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid slice">
+        <g class="sea-grid">
+          <line x1="0" y1="120" x2="1000" y2="120"/><line x1="0" y1="240" x2="1000" y2="240"/>
+          <line x1="0" y1="360" x2="1000" y2="360"/><line x1="0" y1="480" x2="1000" y2="480"/>
+          <line x1="0" y1="600" x2="1000" y2="600"/>
+          <line x1="160" y1="0" x2="160" y2="680"/><line x1="360" y1="0" x2="360" y2="680"/>
+          <line x1="560" y1="0" x2="560" y2="680"/><line x1="760" y1="0" x2="760" y2="680"/>
+        </g>
+
+        <!-- 大陆轮廓（抽象） -->
+        <path class="coast" d="M0 60 L420 40 L560 110 L520 240 L640 300 L600 430 L470 470 L430 560 L250 600 L120 540 L40 420 L0 300 Z"/>
+        <!-- 辽东半岛 -->
+        <path class="coast" d="M430 300 L470 350 L452 430 L420 470 L405 420 L418 350 Z"/>
+        <!-- 朝鲜半岛 -->
+        <path class="coast" d="M600 360 L650 380 L648 470 L612 560 L585 520 L598 430 Z"/>
+        <!-- 山东半岛 -->
+        <path class="coast" d="M250 560 L360 540 L380 600 L300 640 L240 612 Z"/>
+        <!-- 日本（一角） -->
+        <path class="coast" d="M820 460 L920 430 L960 520 L880 600 L800 560 Z"/>
+
+        <!-- 控制区色块 -->
+        <path class="zone" d="M120 70 L520 55 L500 230 L300 270 L150 230 Z" fill="rgba(199,90,71,0.16)" stroke="rgba(199,90,71,0.5)"/>
+        <path class="zone" d="M40 240 L300 270 L250 430 L90 400 Z" fill="rgba(154,134,196,0.14)" stroke="rgba(154,134,196,0.45)"/>
+        <path class="zone" d="M595 360 L652 382 L646 540 L590 540 Z" fill="rgba(123,179,108,0.16)" stroke="rgba(123,179,108,0.5)"/>
+        <path class="zone" d="M250 555 L380 540 L378 612 L255 620 Z" fill="rgba(213,155,66,0.14)" stroke="rgba(213,155,66,0.45)"/>
+        <path class="zone" d="M820 462 L918 432 L956 520 L820 560 Z" fill="rgba(90,183,200,0.12)" stroke="rgba(90,183,200,0.4)"/>
+
+        <!-- 威胁与贸易向量 -->
+        <path class="threat" d="M360 150 C380 230 405 300 418 360"/>
+        <path class="threat" d="M150 200 C260 250 360 300 408 360"/>
+        <path class="trade sea-lane" d="M440 430 C520 470 560 470 600 460"/>
+        <path class="trade sea-lane" d="M430 450 C360 520 320 560 320 580"/>
+        <path class="trade sea-lane" d="M455 440 C620 470 760 480 860 510"/>
+
+        <!-- 标签 -->
+        <text class="zlabel" x="300" y="130">大清 · 沈阳</text>
+        <text class="zsub" x="300" y="150">主力北调松锦 · 辽南空虚</text>
+        <text class="zlabel" x="190" y="120">锦州前线</text><text class="zsub" x="190" y="138">松锦决战</text>
+        <text class="zlabel" x="90" y="330">蒙古各部</text><text class="zsub" x="90" y="348">漠南降清 · 漠北自主</text>
+        <text class="zlabel" x="600" y="345">朝鲜</text><text class="zsub" x="600" y="500">丁丑下城 · 表敌实同</text>
+        <text class="zlabel" x="250" y="595">大明 · 登莱</text><text class="zsub" x="250" y="635">多线崩溃边缘</text>
+        <text class="zlabel" x="845" y="455">日本</text><text class="zsub" x="845" y="475">锁国 · 长崎出岛</text>
+
+        <!-- 我方据点 旅顺 -->
+        <circle class="us-ping" cx="432" cy="452" r="10"/>
+        <circle cx="432" cy="452" r="7" fill="var(--amber)" stroke="#1a120a" stroke-width="2"/>
+        <text class="zlabel" x="448" y="448" style="fill:#ffe0a5">旅顺口</text>
+        <text class="zsub" x="448" y="466" style="fill:#f1c27c">元老院辽南据点</text>
+      </svg>
+      <div class="scale">
+        <button>近</button><button>中</button><button>远</button><button class="on">战略</button>
+      </div>
+    </section>
+
+    <aside class="panel feed">
+      <div class="panel-head">
+        <div class="eyebrow">情报事件队列 · 待决策</div>
+        <div class="panel-title" style="font-size:20px">紧急预警</div>
+        <div class="panel-meta">达到情报值阈值即触发；点击选项交参议席。</div>
+      </div>
+      <div class="feed-body">
+        <article class="intel">
+          <div class="intel-head"><span class="badge severe">清 IP≥30</span><span class="intel-title">获悉松锦前线粮草告急</span><span class="src">北方处</span></div>
+          <div class="intel-body">皮货商自沈阳带回：洪承畴粮道吃紧，清军围城日久亦显疲态。此情报时效性高。</div>
+          <div class="opts">
+            <button class="opt"><b>①</b>向明朝通报，换取好感（明 +，清若察觉 −）</button>
+            <button class="opt"><b>②</b>囤积粮食待价而沽（财政机会）</button>
+            <button class="opt"><b>③</b>无视，仅存档</button>
+          </div>
+        </article>
+
+        <article class="intel">
+          <div class="intel-head"><span class="badge mid">朝鲜 IP≥20</span><span class="intel-title">北道官员求购武器，称为北伐备战</span><span class="src">东方处</span></div>
+          <div class="intel-body">义州方向同情者传话：愿以白银与清军调动情报，换取火枪一批。须极度谨慎，不留文字证据。</div>
+          <div class="opts">
+            <button class="opt"><b>①</b>秘密出售火枪（得银两，风险高）</button>
+            <button class="opt"><b>②</b>拒绝</button>
+            <button class="opt"><b>③</b>要求以情报换物资</button>
+          </div>
+        </article>
+
+        <article class="intel">
+          <div class="intel-head"><span class="badge steel">蒙古 IP≥15</span><span class="intel-title">科尔沁台吉密告：清军 90 日内或回撤辽南</span><span class="src">草原情报组</span></div>
+          <div class="intel-body">以布匹茶叶易得之情报。若属实，金州地峡防线须在窗口期内完成加固。</div>
+          <div class="opts">
+            <button class="opt"><b>①</b>加速筑城备战</button>
+            <button class="opt"><b>②</b>疏散平民</button>
+            <button class="opt"><b>③</b>散布假情报迷惑清军</button>
+          </div>
+        </article>
+
+        <article class="intel">
+          <div class="intel-head"><span class="badge cyan">罗刹 IP≥10</span><span class="intel-title">索伦商人描述：北方来了说奇怪语言的骑马者</span><span class="src">西北处</span></div>
+          <div class="intel-body">哥萨克东扩抵阿穆尔河方向。长期预警价值——若罗刹与清在黑龙江冲突，将牵制清军北顾。</div>
+          <div class="opts">
+            <button class="opt"><b>①</b>派探查队北上</button>
+            <button class="opt"><b>②</b>向清朝出售情报（反间）</button>
+            <button class="opt"><b>③</b>保密建档</button>
+          </div>
+        </article>
+      </div>
+    </aside>
+
+    <footer class="bottom-bar">
+      <div class="bottom-group">
+        <div class="hint">三不原则：不直接参与军事行动 · 不在明廷官员中发展间谍 · 不主动暗杀破坏。情报局只提供分析结论，不与警务局、军委会共享原始情报。</div>
+      </div>
+      <div class="bottom-group right">
+        <span class="hint"><span class="kbd">M</span> 切换小地图 · <span class="kbd">F7</span> 危机影响图</span>
+        <div class="speed"><span>速度</span><button class="tiny">Ⅱ</button><strong>1.0x</strong><button class="tiny">▸</button></div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // 数据取自《旅顺口游戏设定文档》第22章·第29章
+    const POWERS = [
+      { id: "qing",   name: "大清（女真）", color: "#c75a47", stance: "敌对", sc: "high", rel: -60, ip: 36, ipMax: 50, note: "首要监测", focus: "松锦战事 · 皇太极健康 · 汉军旗驻防" },
+      { id: "ming",   name: "大明（崇祯）", color: "#9a86c4", stance: "战略伙伴", sc: "mid", rel: 20, ip: 22, ipMax: 50, note: "岌岌可危", focus: "登莱官场 · 北京政情 · 辽西走廊" },
+      { id: "joseon", name: "朝鲜（李朝）", color: "#7bb36c", stance: "表敌实同", sc: "low", rel: 35, ip: 24, ipMax: 50, note: "战略缓冲", focus: "燕行使团 · 北道边贸 · 统制营水军" },
+      { id: "mongol", name: "蒙古各部", color: "#8fa0c4", stance: "中立", sc: "mid", rel: 0, ip: 17, ipMax: 40, note: "分裂草原", focus: "科尔沁动向 · 漠北自主 · 准噶尔崛起" },
+      { id: "japan",  name: "日本（幕府）", color: "#5ab7c8", stance: "商业合作", sc: "low", rel: 15, ip: 9, ipMax: 30, note: "锁国暗流", focus: "石见银山 · 对马中转 · 长崎唐通事" },
+      { id: "voc",    name: "荷兰 VOC", color: "#c8a25a", stance: "竞争者", sc: "low", rel: 5, ip: 6, ipMax: 30, note: "潜在合作", focus: "热兰遮城 · 丝银贸易 · 火炮技术" },
+      { id: "zheng",  name: "郑氏集团", color: "#b88a6a", stance: "暂不接触", sc: "low", rel: 0, ip: 5, ipMax: 30, note: "海权变量", focus: "台海航线 · 北上贸易 · 明清私通" },
+      { id: "russia", name: "罗刹（俄）", color: "#7ba6b6", stance: "未知量", sc: "low", rel: 0, ip: 11, ipMax: 30, note: "北方预警", focus: "哥萨克东扩 · 阿穆尔河 · 索伦各部" },
+    ];
+    const watch = document.getElementById("watch");
+    POWERS.forEach((p, i) => {
+      const el = document.createElement("div");
+      el.className = "power"; el.setAttribute("aria-pressed", i === 0);
+      el.innerHTML = `
+        <div class="power-top">
+          <span class="swatch" style="background:${p.color}"></span>
+          <span class="power-name">${p.name}</span>
+          <span class="power-stance badge ${p.sc}">${p.stance}</span>
+        </div>
+        <div class="power-meta"><span>情报值 IP ${p.ip}/${p.ipMax}</span><span style="text-align:right">关系值 ${p.rel>0?'+':''}${p.rel}</span></div>
+        <div class="bar ${p.sc==='high'?'red':p.sc==='mid'?'amber':'cyan'} ip-bar"><span style="width:${Math.round(p.ip/p.ipMax*100)}%"></span></div>
+        <div class="power-meta" style="margin-top:6px"><span style="grid-column:1/3;color:var(--faint)">优先监测：${p.focus}</span></div>`;
+      el.addEventListener("click", () => {
+        document.querySelectorAll(".power").forEach(x => x.setAttribute("aria-pressed", "false"));
+        el.setAttribute("aria-pressed", "true");
+      });
+      watch.appendChild(el);
+    });
+  </script>
+</body>
+</html>

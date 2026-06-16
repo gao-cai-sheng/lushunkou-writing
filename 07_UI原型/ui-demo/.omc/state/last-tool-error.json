@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__plugin_ecc_playwright__browser_navigate",
+  "tool_input_preview": "{\"url\":\"file:///Users/gao/Desktop/旅顺口写作计划/07_UI原型/ui-demo/bastion-section.html\"}",
+  "error": "### Error\nError: Extension connection timeout. Make sure the \"Playwright MCP Bridge\" extension is installed. See https://github.com/microsoft/playwright-mcp/blob/main/packages/extension/README.md for installation instructions.",
+  "timestamp": "2026-06-02T13:33:12.945Z",
+  "retry_count": 1
+}
